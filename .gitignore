@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.vscode/
+# numpy overlay and fetched NVIDIA assets (setup.sh): never committed
+.deps/
+assets/
+# run outputs
+logs/
+outputs/
+datasets/
+*.mp4
