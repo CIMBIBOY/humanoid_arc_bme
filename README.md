@@ -55,7 +55,7 @@ committed. The `.deps/` overlay pins numpy 1.26 because the pinocchio build that
 Pink IK needs segfaults under numpy 2.
 
 `scripts/launch.sh` runs any script through IsaacLab with this repo, the core
-(`$HUMANOID_ARC_CORE`, default `../humanoid_arc`) and the overlay on
+(`$HUMANOID_ARC_CORE`; default: the parent repo when this is its `bme/` submodule, else `../humanoid_arc`) and the overlay on
 `PYTHONPATH`, and points the core at `assets/` (`$HUMANOID_ARC_ASSETS`).
 
 ## Run

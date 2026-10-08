@@ -7,16 +7,18 @@
 #
 # Environment:
 #   ISAACLAB_DIR        IsaacLab checkout (default: ../IsaacLab)
-#   HUMANOID_ARC_CORE   humanoid_arc checkout providing humanoid_arc_core (default: ../humanoid_arc)
+#   HUMANOID_ARC_CORE   humanoid_arc checkout providing humanoid_arc_core (default: the parent repo when this
+#                       repo is its bme/ submodule, else ../humanoid_arc)
 #   HUMANOID_ARC_ASSETS asset root (default: ./assets, filled by setup.sh)
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ISAACLAB_DIR="${ISAACLAB_DIR:-$REPO_ROOT/../IsaacLab}"
-CORE_DIR="${HUMANOID_ARC_CORE:-$REPO_ROOT/../humanoid_arc}"
+if [[ -d "$REPO_ROOT/../humanoid_arc_core" ]]; then DEFAULT_CORE="$REPO_ROOT/.."; else DEFAULT_CORE="$REPO_ROOT/../humanoid_arc"; fi
+CORE_DIR="${HUMANOID_ARC_CORE:-$DEFAULT_CORE}"
 
 if [[ $# -lt 1 ]]; then
-  sed -n '2,12p' "$0"; exit 1
+  sed -n '2,13p' "$0"; exit 1
 fi
 if [[ ! -d "$REPO_ROOT/.deps/numpy" ]]; then
   echo "[ERROR] .deps overlay missing; run ./setup.sh first" >&2; exit 1
