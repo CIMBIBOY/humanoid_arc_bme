@@ -55,7 +55,7 @@ committed. The `.deps/` overlay pins numpy 1.26 because the pinocchio build that
 Pink IK needs segfaults under numpy 2.
 
 `scripts/launch.sh` runs any script through IsaacLab with this repo, the core
-(`$HUMANOID_ARC_CORE`; default: the parent repo when this is its `bme/` submodule, else `../humanoid_arc`) and the overlay on
+(`$HUMANOID_ARC_CORE`; default: the parent repo when this is its `humanoid_arc_bme/` submodule, else `../humanoid_arc`) and the overlay on
 `PYTHONPATH`, and points the core at `assets/` (`$HUMANOID_ARC_ASSETS`).
 
 ## Run
@@ -110,6 +110,5 @@ with its default `agile_legs` base.
 
 ## License
 
-Not chosen yet. TODO for the repository owner: add a LICENSE before making
-this repository public. Third-party assets (NVIDIA's G1 USD and policies) are
-fetched by `setup.sh` under NVIDIA's terms and are not redistributed here.
+MIT, see [LICENSE](LICENSE). Third-party assets (NVIDIA's G1 USD and policies)
+are fetched by `setup.sh` under NVIDIA's terms and are not redistributed here.

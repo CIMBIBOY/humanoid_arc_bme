@@ -8,7 +8,7 @@
 # Environment:
 #   ISAACLAB_DIR        IsaacLab checkout (default: ../IsaacLab)
 #   HUMANOID_ARC_CORE   humanoid_arc checkout providing humanoid_arc_core (default: the parent repo when this
-#                       repo is its bme/ submodule, else ../humanoid_arc)
+#                       repo is its humanoid_arc_bme/ submodule, else ../humanoid_arc)
 #   HUMANOID_ARC_ASSETS asset root (default: ./assets, filled by setup.sh)
 set -euo pipefail
 
