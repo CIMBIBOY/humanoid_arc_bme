@@ -31,7 +31,7 @@ from . import mdp
 import os
 from pathlib import Path
 
-from humanoid_arc_core.robots.assets import G1_29DOF_USD
+from humanoid_arc_bme.robots.assets import G1_29DOF_USD
 
 LEG_JOINTS = [".*_hip_.*_joint", ".*_knee_joint", ".*_ankle_.*_joint"]
 # The 29 body joints the Agile policy observes (hands excluded); order follows the articulation.
@@ -45,7 +45,7 @@ OBSERVED_JOINTS = [
     "waist_.*_joint",
 ]
 # Recorded pick-place demos whose upper-body joint targets the arms replay
-# (record them with the core's tools/record_demos.py --speed 1.5). Override
+# (record them with scripts/pick_place/record_demos.py --speed 1.5). Override
 # with $HUMANOID_ARC_ARM_DEMOS (comma-separated paths).
 _DEFAULT_DEMOS = Path(__file__).resolve().parents[3] / "datasets" / "g1_pick_place_scripted_v2.hdf5"
 DEMO_FILES = os.environ.get("HUMANOID_ARC_ARM_DEMOS", str(_DEFAULT_DEMOS)).split(",")

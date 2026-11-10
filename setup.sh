@@ -11,9 +11,6 @@
 #              content): the G1 29-DoF tri-hand USD, the AGILE lower-body
 #              policy, and IsaacLab's pretrained G1 flat-walking checkpoint
 #              converted to the rsl-rl-lib >= 5 format.
-#
-# humanoid_arc_core (robots, pick-place task, skills) is not installed here;
-# scripts/launch.sh finds it via $HUMANOID_ARC_CORE (default ../humanoid_arc).
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

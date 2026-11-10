@@ -4,7 +4,7 @@ Reuses everything from the core's pick-place task (same actions and
 observations, the `agile_legs` base: AGILE lower body + Pink IK) and adds N
 tables arranged around a square path. The robot walks the perimeter
 (`policies/navigator.py`), and at each corner runs the core's scripted
-pick-place skill (`humanoid_arc_core.skills.scripted_pick_place`),
+pick-place skill (`humanoid_arc_bme.skills.scripted_pick_place`),
 orchestrated by `policies/table_tour.py`.
 
 To add/replace a stop: edit STOPS below (or generate it -- `layout_square`
@@ -24,9 +24,9 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.utils import configclass
 
-from humanoid_arc_core.tasks.pick_place.env_cfg import OBJECT_SIZE, TABLE_SIZE, G1PickPlaceEnvCfg, G1PickPlaceSceneCfg
-from humanoid_arc_core.tasks.pick_place.env_cfg import ObservationsCfg as G1PickPlaceObservationsCfg
-from humanoid_arc_core.tasks.pick_place.env_cfg import TerminationsCfg as G1PickPlaceTerminationsCfg
+from humanoid_arc_bme.tasks.pick_place.env_cfg import OBJECT_SIZE, TABLE_SIZE, G1PickPlaceEnvCfg, G1PickPlaceSceneCfg
+from humanoid_arc_bme.tasks.pick_place.env_cfg import ObservationsCfg as G1PickPlaceObservationsCfg
+from humanoid_arc_bme.tasks.pick_place.env_cfg import TerminationsCfg as G1PickPlaceTerminationsCfg
 
 # Forward/right offset of the object from the robot's pelvis, in the pelvis
 # frame, reused unchanged from the validated single-table layout

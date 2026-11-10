@@ -6,7 +6,7 @@ checkpoint (any run of the same task); the optimizer's moments are dropped and t
 
     scripts/launch.sh scripts/lower_body/init_lower_body_from_agile.py \
         --donor logs/rsl_rl/g1_lower_body/<run>/model_299.pt --run_name agile_init
-    scripts/launch.sh $CORE/tools/isaaclab_tool.py reinforcement_learning/rsl_rl/train.py --task ... \
+    scripts/launch.sh scripts/isaaclab_tool.py reinforcement_learning/rsl_rl/train.py --task ... \
         --resume --load_run agile_init --checkpoint model_0.pt
 """
 
@@ -16,7 +16,7 @@ from pathlib import Path
 
 import torch
 
-from humanoid_arc_core.robots.assets import AGILE_LOCOMOTION_POLICY
+from humanoid_arc_bme.robots.assets import AGILE_LOCOMOTION_POLICY
 
 parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
 parser.add_argument("--donor", required=True)

@@ -33,7 +33,7 @@ import torch  # noqa: E402
 from isaaclab_tasks.utils import parse_env_cfg  # noqa: E402
 
 import humanoid_arc_bme.envs.g1_lower_body  # noqa: E402,F401 - registers the gym ids
-from humanoid_arc_core.robots.assets import AGILE_LOCOMOTION_POLICY  # noqa: E402
+from humanoid_arc_bme.robots.assets import AGILE_LOCOMOTION_POLICY  # noqa: E402
 
 
 def main():

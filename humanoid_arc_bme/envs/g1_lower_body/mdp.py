@@ -105,7 +105,7 @@ class ArmMotionAction(ActionTerm):
         missing = [path for path in files if not os.path.isfile(path)]
         if missing:
             raise FileNotFoundError(
-                f"arm-motion demos not found: {missing}. Record them with humanoid_arc_core's tools/record_demos.py"
+                f"arm-motion demos not found: {missing}. Record them with scripts/pick_place/record_demos.py"
                 " (--speed 1.5) or point $HUMANOID_ARC_ARM_DEMOS at existing files."
             )
         demos = []

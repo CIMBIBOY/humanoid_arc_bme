@@ -6,9 +6,11 @@ under arm motion, a hierarchical walk-and-manipulate tour, massively parallel
 locomotion training, and behaviour cloning from scripted and Mimic-generated
 demonstrations.
 
-The manipulation stack (robot assets, the pick-and-place task, the scripted
-pick-and-place skill, BC evaluation) lives once in **humanoid_arc_core**; this
-repo imports it and adds what is specific to the legged G1.
+The package holds the generic simulation stack (`humanoid_arc_bme.robots`: G1 assets and base
+plug-ins; `humanoid_arc_bme.tasks.pick_place`: the pick-and-place task with its Mimic and
+domain-randomized variants; `humanoid_arc_bme.skills`: the scripted pick-and-place skill) and
+what is specific to the legged G1 (`humanoid_arc_bme.envs`, `humanoid_arc_bme.policies`). It runs
+on its own; nothing else needs to be checked out.
 
 ## Demos
 
@@ -40,10 +42,9 @@ are in **[results.md](results.md)**.
 
 ## Install
 
-Needs IsaacLab 2.3.2 on Isaac Sim 5.1 and a checkout of humanoid_arc_core.
+Needs IsaacLab 2.3.2 on Isaac Sim 5.1.
 
 ```bash
-git clone <humanoid_arc_core repository> ../humanoid_arc
 export ISAACLAB_DIR=/path/to/IsaacLab           # default: ../IsaacLab
 ./setup.sh                                       # numpy<2 overlay + NVIDIA assets into assets/
 ```
@@ -54,9 +55,8 @@ the rsl-rl-lib 5 format) from NVIDIA's public content bucket; none of them are
 committed. The `.deps/` overlay pins numpy 1.26 because the pinocchio build that
 Pink IK needs segfaults under numpy 2.
 
-`scripts/launch.sh` runs any script through IsaacLab with this repo, the core
-(`$HUMANOID_ARC_CORE`; default: the parent repo when this is its `humanoid_arc_bme/` submodule, else `../humanoid_arc`) and the overlay on
-`PYTHONPATH`, and points the core at `assets/` (`$HUMANOID_ARC_ASSETS`).
+`scripts/launch.sh` runs any script through IsaacLab with this repo and the overlay on
+`PYTHONPATH`, and points the package at `assets/` (`$HUMANOID_ARC_ASSETS`).
 
 ## Run
 
@@ -66,7 +66,7 @@ scripts/launch.sh scripts/run_table_tour.py --headless --laps 1 --video logs/tou
 
 # lower body: check the env with AGILE in the legs, train, evaluate
 scripts/launch.sh scripts/lower_body/check_lower_body_env.py --headless --num_envs 256 --steps 1000
-scripts/launch.sh ../humanoid_arc/tools/isaaclab_tool.py reinforcement_learning/rsl_rl/train.py \
+scripts/launch.sh scripts/isaaclab_tool.py reinforcement_learning/rsl_rl/train.py \
     --task HumanoidArc-G1-LowerBody-v0 --num_envs 8192 --headless
 scripts/launch.sh scripts/lower_body/eval_lower_body.py --headless --checkpoint logs/rsl_rl/g1_lower_body/<run>/model_<N>.pt
 

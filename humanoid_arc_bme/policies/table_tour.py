@@ -7,7 +7,7 @@ import torch
 
 from humanoid_arc_bme.envs.g1_table_tour.env_cfg import STOPS
 from humanoid_arc_bme.policies.navigator import navigate
-from humanoid_arc_core.skills.scripted_pick_place import PHASES, ScriptedPickPlace
+from humanoid_arc_bme.skills.scripted_pick_place import PHASES, ScriptedPickPlace
 
 HOME_PHASE = [p[0] for p in PHASES].index("home")
 HAND_OPEN = 0.0

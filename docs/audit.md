@@ -30,7 +30,7 @@ additional `place_offset` further from its original spot every lap --
 unbounded drift, eventually off the table. Fixed by capturing
 `self._object_home` once, at construction (before anything moves the
 object), and deriving the place target from that fixed point instead of the
-live one. `humanoid_arc_core.skills.scripted_pick_place`.
+live one. `humanoid_arc_bme.skills.scripted_pick_place`.
 
 **3. Stale grasp geometry for stops 1..N-1.** `TableTourController.__init__`
 constructs one `ScriptedPickPlace` per stop up front; each one's constructor

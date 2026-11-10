@@ -11,11 +11,9 @@ command that produced it and says whether a log of that run still exists.
   was not kept. Re-run the command before you quote it.
 - **re-run**: measured again during the 2026-10-08 restructuring.
 
-Commands assume `scripts/launch.sh` from this repo (see README). `core:`
-means a script from humanoid_arc_core, run through the core's
-`tools/launch.sh`.
+Commands assume `scripts/launch.sh` from this repo (see README).
 
-## Pick-and-place on the standing G1 (core task, `agile_legs` base)
+## Pick-and-place on the standing G1 (`agile_legs` base)
 
 | what | result | command | evidence |
 |---|---|---|---|
@@ -23,10 +21,10 @@ means a script from humanoid_arc_core, run through the core's
 | 16 recorded demos replayed from actions alone | 16/16 succeed; final object max 2.6 mm (mean 0.6 mm) from the recording | core: `tools/replay_demos.py --headless --dataset_file datasets/g1_pick_place_scripted.hdf5` | re-run 2026-10-08 (2026-09-28 notes said max 2.0, mean 0.5) |
 | place error vs place offset (single table, 4 envs) | sideways 0.25 m: 4-5 mm; forward 0.10: 7 mm; 0.15: 24 mm; 0.20: 60 mm, 0/4 placed | core: `tools/run_pick_place.py --place_offset X Y Z` | no log |
 | Mimic: 16 scripted demos to 1,000 | 1,000 successes in 1,032 attempts (96.9%); place error mean 16 mm, max 24 mm | core: IsaacLab `annotate_demos.py --auto` + `generate_dataset.py` through `tools/isaaclab_tool.py` | dataset kept; no generation log |
-| BC-RNN, IsaacLab default config | 0/8 | robomimic `--algo bc`, 500 epochs, `eval/eval_bc.py --num_envs 8` | no log |
+| BC-RNN, IsaacLab default config | 0/8 | robomimic `--algo bc`, 500 epochs, `scripts/bc/eval_bc.py --num_envs 8` | no log |
 | BC-RNN + ±1.5 cm observation noise | 12/24 | `--algo bc_obs_noise`, 300 epochs | no log |
-| BC-RNN + noise + 50-step context | reported as **45/48** (21/24 and 24/24, two eval seeds) | `--algo bc_obs_noise_h50`, 300 epochs, `eval/eval_bc.py --num_envs 24 --horizon 1000 --seed 303` | **only one training run (`bc_noise_h50_300`) is kept and no eval log for either seed: the "two seeds" are unverified** |
-| noise sweep on that policy | obs noise 0.005/0.01/0.02: 20, 20, 8 of 24; action noise 0.005/0.01/0.02: 12, 0, 0 of 24 | `eval/eval_bc.py --obs_noise S` / `--action_noise S` | **no eval logs**: unverified |
+| BC-RNN + noise + 50-step context | reported as **45/48** (21/24 and 24/24, two eval seeds) | `--algo bc_obs_noise_h50`, 300 epochs, `scripts/bc/eval_bc.py --num_envs 24 --horizon 1000 --seed 303` | **only one training run (`bc_noise_h50_300`) is kept and no eval log for either seed: the "two seeds" are unverified** |
+| noise sweep on that policy | obs noise 0.005/0.01/0.02: 20, 20, 8 of 24; action noise 0.005/0.01/0.02: 12, 0, 0 of 24 | `scripts/bc/eval_bc.py --obs_noise S` / `--action_noise S` | **no eval logs**: unverified |
 | chunked policy (robomimic 0.5 Diffusion Policy) | 0/24 clean, 0/24 at action noise 0.005 and 0.01 | [docs/bc_chunked.md](docs/bc_chunked.md) | negative result; run log kept in the core repo |
 
 ## Table tour (walk between four tables, pick-place at each)

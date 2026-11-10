@@ -33,9 +33,9 @@ import torch  # noqa: E402
 
 from isaaclab_tasks.utils import parse_env_cfg  # noqa: E402
 
-import humanoid_arc_core.tasks.pick_place  # noqa: E402,F401 - registers the gym ids
-from humanoid_arc_core.tasks.pick_place.env_cfg import DEMO_OBJECT_POS, DEMO_PLACE_OFFSET  # noqa: E402
-from humanoid_arc_core.skills.scripted_pick_place import PHASES, ScriptedPickPlace  # noqa: E402
+import humanoid_arc_bme.tasks.pick_place  # noqa: E402,F401 - registers the gym ids
+from humanoid_arc_bme.tasks.pick_place.env_cfg import DEMO_OBJECT_POS, DEMO_PLACE_OFFSET  # noqa: E402
+from humanoid_arc_bme.skills.scripted_pick_place import PHASES, ScriptedPickPlace  # noqa: E402
 
 FOOT_CONTACT_Z = 0.06  # ankle-roll link height below which the foot counts as planted
 
