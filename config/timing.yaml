@@ -1,0 +1,9 @@
+# Rates and delays of the real robot, used by the simulator (humanoid_arc_bme/onboard/api/timing.py).
+#
+# Every value is `null` until it has been MEASURED on the robot (step B3.2 for rates, B4.3 for the
+# command and state delays, B5 for the camera delay). The loader refuses to hand out a null value:
+# a sim run that needs a number that nobody has measured stops with an error instead of guessing.
+control_hz: null          # rate of our command stream to the robot
+state_delay_ms: null      # robot state -> our code
+command_delay_ms: null    # our command -> robot motion begins
+camera_delay_ms: null     # exposure -> image available to our code

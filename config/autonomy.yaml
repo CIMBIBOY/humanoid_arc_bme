@@ -1,0 +1,33 @@
+# Settings of the autonomy stack (python -m humanoid_arc_bme.onboard.runtime serve --autonomy config/autonomy.yaml).
+# EVERY geometric value below is an UNMEASURED PLACEHOLDER until it has been measured on the robot (docs/onboard.md,
+# "Calibration"). The stack refuses nothing on its own account: measure first, then trust the numbers.
+pelvis_height_m: 0.78          # pelvis above the ground while standing (perception is ground-referenced, the arm pelvis-referenced)
+camera:                        # head depth camera, looking DOWN
+  mount_torso_xyz: [0.06, 0.0, 0.43]   # m, torso frame: forward, left, up
+  pitch_down_deg: 50.0
+  width: 640
+  height: 480
+  fps: 15
+lidar:                         # Livox MID-360 (the stack runs without it; with it, forward obstacles beyond the camera are seen)
+  enabled: false
+  topic: /livox/lidar
+  mount_xyz: [0.0, 0.0, 0.5]   # m, body frame (ground-referenced height included)
+  pitch_down_deg: 0.0          # a level lidar sees nothing nearer than ~1 m; a 60-70 deg down-tilt covers the near field
+localizer:
+  topic: /dlio/odom_node/odom
+detector:                      # YOLO-seg ONNX (humanoid_arc_bme/onboard/perception/yolo_seg.py). Ultralytics weights are AGPL-3.0.
+  model: ~/g1_models/yolo11n-seg.onnx
+  classes: [cup, bottle, bowl]  # COCO names the detector may report
+  conf: 0.35
+runner:                        # PipelineRunner profile for a robot with no neck camera
+  guard_camera: down
+  max_range: 1.0
+  require_lidar: false         # true once the Livox is mounted and verified
+executor:
+  reach_x_m: 0.25              # where the object's centre must stand in the body frame before the arm moves
+  reach_y_m: 0.05
+gateway:                       # FastAPI command gateway (Tailscale or an SSH tunnel; never a public interface)
+  host: 127.0.0.1              # a Tailscale address (100.64.0.0/10) is accepted too
+  port: 8090
+groot:
+  endpoint: tcp://127.0.0.1:5556   # the deploy's --input-type zmq_manager subscribes here

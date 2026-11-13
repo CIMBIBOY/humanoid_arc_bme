@@ -1,0 +1,110 @@
+# FIRST-WALK limits for the safety layer (SR-12 of docs/audit/2026-10-30_safety_review.md).
+#
+# !!! NOT VALIDATED ON HARDWARE. `validated_on_robot: false` stays until step B3.3. !!!
+# Identical to config/g1_limits.yaml (tests/core/test_safety_review.py checks that) except:
+# - joint_vel_max (legs): 8 rad/s = 0.16 rad per 20 ms tick, instead of the URDF maxima (20-37 rad/s), so S1's per-tick
+#   rate rule is a real limit. This is a conservative FIRST guess, not a measured value. S4 measured that the E2 gait
+#   asks for more than 0.74 rad/tick on the ankle pitch: run the S4 sim-as-robot test with EXACTLY this file before any
+#   hoist test; if E2 falls with it in sim, it is not ready for the hoist. Never raise it on the robot "to make it walk".
+# - tracking_error_max_rad: 0.5 rad bound on |target - measured| after the rate rule (SR-03; the protocol's T-TRK leg
+#   value). The policy controller faults when it is active 5 ticks in a row. UNVALIDATED: W4 measured that a tight
+#   measured-reference clamp costs falls; check it in S4 first.
+# - base_height is NOT set: the policy's trained height range is not written down anywhere read (UNKNOWN), so only the
+#   finiteness check applies and the height is fixed at robot_runtime.yaml policy_height.
+# Select it explicitly: `serve --limits g1_limits_firstwalk.yaml` (the startup event logs the file and its sha256).
+validated_on_robot: false` until step B3.3 has replaced these
+# values with the real robot's own limits. Joint position limits are the URDF's
+# (humanoid_arc_bme/robots/g1/g1_29dof_with_hand_only_kinematics.urdf); the safety layer
+# keeps `pos_margin_rad` inside them. Velocity, workspace and base values are the initial
+# conservative ones of docs/plan/B-robot-g1.md B1.4 (arms/base <= 0.2 m/s) and must be
+# measured and signed off before any hardware step uses them.
+validated_on_robot: false
+pos_margin_rad: 0.05
+joint_vel_max_default: 1.0        # rad/s, every commanded joint (URDF hardware max is 12-37 rad/s)
+wrist_speed_max: 0.2              # m/s, wrist target position change per second
+workspace:                        # wrist target position box, pelvis frame, metres
+  frame: pelvis
+  min: [-0.10, -0.55, -0.35]
+  max: [0.55, 0.55, 0.55]
+base_vel_max:                     # absolute limits of the planar base command
+  vx: 0.2                         # m/s
+  vy: 0.1                         # m/s
+  wz: 0.3                         # rad/s
+joint_vel_max:                    # rad/s per joint (legs). FIRST-WALK GUESS, NOT VALIDATED ON HARDWARE (see the header)
+  left_hip_pitch_joint: 8.0
+  right_hip_pitch_joint: 8.0
+  left_hip_roll_joint: 8.0
+  right_hip_roll_joint: 8.0
+  left_hip_yaw_joint: 8.0
+  right_hip_yaw_joint: 8.0
+  left_knee_joint: 8.0
+  right_knee_joint: 8.0
+  left_ankle_pitch_joint: 8.0
+  right_ankle_pitch_joint: 8.0
+  left_ankle_roll_joint: 8.0
+  right_ankle_roll_joint: 8.0
+tracking_error_max_rad: 0.5       # rad, |target - measured| bound after the rate rule (SR-03). NOT VALIDATED
+joints:                           # rad, from the URDF
+  left_ankle_pitch_joint: {lower: -0.87267, upper: 0.52360}
+  left_ankle_roll_joint: {lower: -0.26180, upper: 0.26180}
+  left_elbow_joint: {lower: -1.04720, upper: 2.09440}
+  left_hand_index_0_joint: {lower: -1.57080, upper: 0.00000}
+  left_hand_index_1_joint: {lower: -1.74533, upper: 0.00000}
+  left_hand_middle_0_joint: {lower: -1.57080, upper: 0.00000}
+  left_hand_middle_1_joint: {lower: -1.74533, upper: 0.00000}
+  left_hand_thumb_0_joint: {lower: -1.04720, upper: 1.04720}
+  left_hand_thumb_1_joint: {lower: -0.72431, upper: 1.04720}
+  left_hand_thumb_2_joint: {lower: 0.00000, upper: 1.74533}
+  left_hip_pitch_joint: {lower: -2.53070, upper: 2.87980}
+  left_hip_roll_joint: {lower: -0.52360, upper: 2.96710}
+  left_hip_yaw_joint: {lower: -2.75760, upper: 2.75760}
+  left_knee_joint: {lower: -0.08727, upper: 2.87980}
+  left_shoulder_pitch_joint: {lower: -3.08920, upper: 2.67040}
+  left_shoulder_roll_joint: {lower: -1.58820, upper: 2.25150}
+  left_shoulder_yaw_joint: {lower: -2.61800, upper: 2.61800}
+  left_wrist_pitch_joint: {lower: -1.61443, upper: 1.61443}
+  left_wrist_roll_joint: {lower: -1.97222, upper: 1.97222}
+  left_wrist_yaw_joint: {lower: -1.61443, upper: 1.61443}
+  right_ankle_pitch_joint: {lower: -0.87267, upper: 0.52360}
+  right_ankle_roll_joint: {lower: -0.26180, upper: 0.26180}
+  right_elbow_joint: {lower: -1.04720, upper: 2.09440}
+  right_hand_index_0_joint: {lower: 0.00000, upper: 1.57080}
+  right_hand_index_1_joint: {lower: 0.00000, upper: 1.74533}
+  right_hand_middle_0_joint: {lower: 0.00000, upper: 1.57080}
+  right_hand_middle_1_joint: {lower: 0.00000, upper: 1.74533}
+  right_hand_thumb_0_joint: {lower: -1.04720, upper: 1.04720}
+  right_hand_thumb_1_joint: {lower: -1.04720, upper: 0.72431}
+  right_hand_thumb_2_joint: {lower: -1.74533, upper: 0.00000}
+  right_hip_pitch_joint: {lower: -2.53070, upper: 2.87980}
+  right_hip_roll_joint: {lower: -2.96710, upper: 0.52360}
+  right_hip_yaw_joint: {lower: -2.75760, upper: 2.75760}
+  right_knee_joint: {lower: -0.08727, upper: 2.87980}
+  right_shoulder_pitch_joint: {lower: -3.08920, upper: 2.67040}
+  right_shoulder_roll_joint: {lower: -2.25150, upper: 1.58820}
+  right_shoulder_yaw_joint: {lower: -2.61800, upper: 2.61800}
+  right_wrist_pitch_joint: {lower: -1.61443, upper: 1.61443}
+  right_wrist_roll_joint: {lower: -1.97222, upper: 1.97222}
+  right_wrist_yaw_joint: {lower: -1.61443, upper: 1.61443}
+  waist_yaw_joint: {lower: -0.52360, upper: 0.52360}
+  waist_roll_joint: {lower: -0.26180, upper: 0.26180}
+  waist_pitch_joint: {lower: -0.26180, upper: 0.26180}
+# Operator (web UI) velocity envelope for the first walking tests (humanoid_arc_bme/onboard/runtime/operator.py). Edit HERE only: the UI shows
+# these values but cannot change them. They EQUAL the first-walk caps of docs/plan/first-walk-protocol.md stage D
+# (vx 0.2 / -0.1, vy 0.1, wz 0.3), and the command is additionally clamped by S1's `base_vel_max` above (the tighter
+# limit wins), so going faster needs two independent edits (here and base_vel_max). A heartbeat outside this envelope
+# is rejected (400), not clipped (UI-04).
+operator:
+  vx_min: -0.1            # m/s (backwards; protocol cap -0.1)
+  vx_max: 0.2             # m/s (protocol cap 0.2)
+  vy_max: 0.1             # m/s, absolute (protocol cap 0.1)
+  wz_max: 0.3             # rad/s, absolute (protocol cap 0.3)
+  accel:                  # ramp (rate limiter) on the operator command, per axis
+    vx: 0.5               # m/s^2
+    vy: 0.5               # m/s^2
+    wz: 1.0               # rad/s^2
+  deadman_timeout_s: 0.3  # no UI heartbeat for longer than this while armed: command zero and disarm
+  heartbeat_min_hz: 5.0   # arming refused below this measured heartbeat rate
+  state_stale_s: 0.1      # robot state older than this while armed: command zero and disarm
+  link_loss_s: 0.5        # no robot state at all for this long: link lost, disarm
+  arm_challenge_ttl_s: 30 # the typed arming code expires after this
+  max_tilt_deg: 20.0      # arming refused (and armed loop disarms) when the pelvis is tilted more than this

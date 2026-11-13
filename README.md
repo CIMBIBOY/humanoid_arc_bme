@@ -40,6 +40,17 @@ are in **[results.md](results.md)**.
 | G1 walking from scratch, 8,192 envs | 27.8 min; 0.059 m/s tracking vs 0.098 pretrained | training log kept; eval log and final checkpoint missing |
 | PPO throughput, RTX 5090 | 178,685 env-steps/s at 8,192 envs | CSV kept |
 
+## Onboard stack (standalone, for a real G1)
+
+Natural-language pick and place on a Unitree G1 with Dex3 hands, running on the Jetson Orin NX: grammar, YOLO perception, a
+down-camera safety guard, a task executor, GR00T whole-body control and a FastAPI command gateway. Validated in a CPU
+simulator only; nothing has run on the robot yet. See **[docs/onboard.md](docs/onboard.md)**.
+
+```bash
+python3 scripts/demo_cpusim.py --out demo.mp4     # watch it in the CPU simulator
+python3 -m pytest tests -q                          # ~1,900 tests
+```
+
 ## Install
 
 Needs IsaacLab 2.3.2 on Isaac Sim 5.1.

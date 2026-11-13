@@ -1,0 +1,21 @@
+# Settings of the on-robot operator runtime (python -m humanoid_arc_bme.onboard.runtime serve). Not safety limits: those are in g1_limits.yaml.
+control_hz: 50.0              # runtime loop rate (the policy's control_dt is 0.02 s)
+state_log_hz: 10.0            # robot state rows written to state.jsonl / telemetry.mcap
+camera_hz: 2.0                # camera frames read for the UI and the MCAP
+plot_seconds: 60              # length of the live plots in the UI
+min_free_disk_gb: 1.0         # arming refused when the log directory has less free space
+log_root: ~/g1_runs           # one sub-directory per run (events.jsonl, state.jsonl, telemetry.mcap)
+web_port: 8080
+vendor:                       # 'vendor' controller: unitree_sdk2py LocoClient (service "sport")
+  send_hz: 10.0               # SetVelocity calls per second while armed
+  cmd_duration_s: 0.4         # duration passed to SetVelocity: the vendor stops by itself this long after our last call
+  rpc_timeout_s: 0.25         # LocoClient.SetTimeout
+  max_consecutive_errors: 3   # this many failed SetVelocity calls in a row: controller fault, disarm
+lowcmd:                       # 'policy' controller on the real robot (rt/lowcmd). Hold step B4: see docs/plan/robot-deploy.md
+  damping_kd: 8.0             # kd of the damping state (kp = 0) after STOP / disarm while the vendor mode is released.
+                              # 8 = the vendor's damping command (unitree_rl_gym command_helper.py, OPENED; SR-10). Effect on OUR robot: UNKNOWN until E0
+  hold_kp: [60, 60, 60, 100, 40, 40, 60, 60, 60, 100, 40, 40, 60, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40]
+  hold_kd: [1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+  # hold_kp / hold_kd: gains for joints the policy does not command (waist, arms), held at their pose at arming.
+  # Values are the unitree_sdk2_python G1 low-level example's Kp/Kd (OPENED 2026-10-30), not tuned for this robot.
+nav_module: humanoid_arc_bme.onboard.nav.runtime_hook   # waypoint panel (humanoid_arc_bme/onboard/runtime/path_follow.py); null disables it

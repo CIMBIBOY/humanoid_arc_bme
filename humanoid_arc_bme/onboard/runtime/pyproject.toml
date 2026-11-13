@@ -1,0 +1,12 @@
+[project]
+name = "g1-runtime"
+version = "0.1.0"
+description = "On-robot runtime for the Unitree G1 (observer mode first)"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+unitree = ["cyclonedds==0.10.2", "numpy", "opencv-python"]   # + unitree_sdk2_python from source (not on PyPI)
+camera = ["pyrealsense2"]
+viewer = ["foxglove-sdk"]
+onnx = ["onnxruntime==1.23.2", "numpy"]

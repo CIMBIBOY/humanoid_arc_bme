@@ -1,0 +1,14 @@
+# Python packages for humanoid_arc_bme.onboard.runtime on the G1 dev computer (Jetson Orin NX, JetPack 6.2 = Ubuntu 22.04, Python 3.10, aarch64).
+# Installed by deploy/scripts/install.sh into a venv created with --system-site-packages (so ROS 2 Humble's rclpy stays visible).
+# Availability checked 2026-10-30 through Aether/tools/web_scraper (OPENED = the PyPI / index file list was read):
+numpy==1.26.4        # OPENED: numpy-1.26.4-cp310-cp310-manylinux_2_17_aarch64 wheel on PyPI
+PyYAML==6.0.1        # OPENED: PyYAML-6.0.1-cp310-cp310-manylinux_2_17_aarch64 wheel on PyPI
+onnxruntime==1.23.2  # OPENED: onnxruntime-1.23.2-cp310-cp310-manylinux_2_27_aarch64.manylinux_2_28_aarch64 wheel on PyPI (CPU EP). Newest for Python 3.10; the version all parity/bench numbers were measured with (docs/plan/jetson-inference.md); our exported policies are ONNX IR 8 / opset 18, which 1.20.1 and 1.23.2 both load. Not yet run on the Jetson itself.
+pytest==8.3.4        # pure python; for deploy/scripts/test.sh (fake IO only)
+# NOT here, installed by install.sh with the exact steps:
+#   cyclonedds==0.10.2  OPENED: PyPI has NO aarch64 wheel for 0.10.2 (only x86_64 / macOS / win) -> built from the sdist
+#                       against the C library (git eclipse-cyclonedds/cyclonedds, branch releases/0.10.x), as unitree_sdk2_python's README says
+#   unitree_sdk2py      OPENED: README installs from git (pip install -e .); its setup.py requires cyclonedds==0.10.2, numpy, opencv-python
+#                       (installed with --no-deps; whether `import unitree_sdk2py` needs cv2 is UNKNOWN: preflight shows it)
+#   onnxruntime-gpu     optional (ORT=gpu): OPENED onnxruntime_gpu-1.24.0-cp310-cp310-linux_aarch64 on https://pypi.jetson-ai-lab.io/jp6/cu126;
+#                       which CUDA/TensorRT it was built against is UNKNOWN. Not needed: the 384->12 MLP runs on CPU (< 1 ms here).
