@@ -7,106 +7,134 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header id="bar">
-  <span id="badge" class="badge disarmed">DISARMED</span>
-  <span class="kv">controller <b id="ctl">-</b></span>
-  <span class="kv">state age <b id="age">-</b></span>
-  <span class="kv">loop <b id="loophz">-</b></span>
-  <span class="kv">heartbeat <b id="hbhz">-</b></span>
-  <span class="kv">link <b id="link">-</b></span>
-  <span class="kv">cmd <b id="cmdtxt">-</b></span>
-</header>
+<div class="bg" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>
+<div class="app">
 
-<button id="stop" title="STOP (Space or Esc): zero command, controller safe state, disarm, latch">STOP</button>
+  <header class="glass topbar">
+    <div class="brand">G1 Control</div>
+    <nav class="tabs" id="tabs" aria-label="Screens">
+      <button class="tab on" data-view="drive">Drive</button>
+      <button class="tab" data-view="sensors">Sensors</button>
+      <button class="tab" data-view="safety">Safety tests</button>
+    </nav>
+    <div class="chips">
+      <span class="chip" id="chipTarget"><i class="dot"></i><span id="targetTxt">Connecting</span></span>
+      <span class="chip" id="chipState"><i class="dot"></i><span id="stateTxt">-</span></span>
+    </div>
+    <button id="stop" class="stop" aria-label="Emergency stop" title="STOP (Space or Esc): zero command, safe state, disarm, latch">STOP</button>
+  </header>
+  <div id="stopmsg" class="stopmsg" role="status" hidden></div>
 
-<main>
-  <section class="card" id="tokencard" hidden>
-    <h2>Token</h2>
-    <p>Paste the token printed by <code>scripts/robot/run.sh</code> (or open the printed URL with <code>#token=...</code>).</p>
-    <input id="tokenin" type="password" autocomplete="off" placeholder="token"> <button id="tokenset">Use</button>
+  <section class="glass card tokencard" id="tokencard" hidden>
+    <div class="lbl">Token needed</div>
+    <p>Open the address printed at startup (it ends in <code>#token=...</code>), or paste the token here.</p>
+    <div class="row"><input id="tokenin" type="password" autocomplete="off" placeholder="token"><button id="tokenset" class="btn">Use</button></div>
   </section>
 
-  <section class="card">
-    <h2>Arm</h2>
-    <div class="row">
-      <label>Controller <select id="ctlsel"></select></label>
-      <button id="armbtn" class="arm">ARM...</button>
-      <button id="disarmbtn">Disarm</button>
-      <button id="resetbtn">Reset STOP</button>
-      <button id="dampbtn" class="danger" title="Vendor damping: the robot goes limp. Only with the robot supported.">Damp</button>
-    </div>
-    <div id="armbox" hidden>
-      <p>Type <b id="armphrase"></b> to arm <b id="armctl"></b>. Hold the physical stop. The command starts at zero.</p>
-      <input id="armtext" autocomplete="off" spellcheck="false"> <button id="armconfirm" class="arm">Confirm</button> <button id="armcancel">Cancel</button>
-    </div>
-    <p id="armmsg" class="msg"></p>
-    <h3>Preflight <span id="pfsum"></span></h3>
-    <ul id="preflight" class="checks"></ul>
-  </section>
+  <!-- ====================================================== DRIVE -->
+  <main class="view" id="view-drive">
+    <div class="col left">
+      <div class="glass card">
+        <div class="lbl">Robot state</div>
+        <div class="big" id="bigState">Disarmed</div>
+        <p class="help" id="stateHelp">The robot cannot move. Arm it to walk.</p>
+        <div class="slide" id="slide" role="slider" aria-label="Slide to arm" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+          <div class="slide-fill" id="slideFill"></div>
+          <div class="slide-label" id="slideLabel">Slide to arm</div>
+          <div class="slide-knob" id="slideKnob"></div>
+        </div>
+        <div class="row gap">
+          <button id="resetbtn" class="btn" hidden>Reset STOP</button>
+          <button id="dampbtn" class="btn warn" title="The robot goes limp. Only with the robot supported.">Go limp</button>
+        </div>
+        <p id="armmsg" class="msg"></p>
+      </div>
 
-  <section class="card">
-    <h2>Drive</h2>
-    <div class="tabs" id="modetabs">
-      <button data-mode="teleop" class="on">Joystick</button>
-      <button data-mode="curvature">Path (curvature)</button>
-      <button data-mode="waypoints">Waypoints</button>
-      <button data-mode="ros">ROS cmd_vel</button>
-    </div>
-    <div id="pane-teleop" class="pane">
-      <canvas id="pad" width="260" height="260" title="HOLD TO RUN: press and drag: up = forward, left/right = turn; keys W/S forward, A/D turn, Q/E sideways (held)"></canvas>
-      <div class="sliders">
-        <label>speed scale <input id="scale" type="range" min="0" max="100" value="50"> <span id="scaleval">50%</span></label>
-        <p class="hint"><b>Hold to run.</b> The robot moves only while you press the pad or hold a drive key
-          (W/S forward-back, A/D turn, Q/E sideways). Releasing commands zero (the robot stands, still armed). After ARM,
-          release every input once before the first move (a key held across arming is ignored).
-          Leaving this tab or losing the link stops the heartbeat: the robot disarms after the deadman timeout.</p>
-        <p class="hint">Envelope (config/g1_limits.yaml, S1-narrowed): <span id="envelope">-</span></p>
+      <div class="glass card">
+        <div class="lbl">Walking brain</div>
+        <div class="choices" id="ctlChoices"></div>
+        <p class="help" id="ctlHelp"></p>
+      </div>
+
+      <div class="glass card">
+        <div class="lbl">Checks before arming <span id="pfsum" class="pfsum"></span></div>
+        <ul class="checks" id="preflight"></ul>
       </div>
     </div>
-    <div id="pane-curvature" class="pane" hidden>
-      <label>speed v (m/s) <input id="cv" type="range" min="-100" max="100" value="0"> <span id="cvval">0</span></label>
-      <label>curvature kappa (1/m, left +) <input id="ck" type="range" min="-200" max="200" value="0"> <span id="ckval">0</span></label>
-      <p class="hint">vx = v, wz = v * kappa. If the yaw rate would exceed the envelope, the speed drops and the curvature is kept.
-        The sliders only shape the path: the robot moves only while HOLD TO RUN is pressed.</p>
-    </div>
-    <div id="pane-waypoints" class="pane" hidden>
-      <p id="navinfo" class="hint"></p>
-      <textarea id="wps" rows="5" placeholder="x y per line, metres, relative to the robot when the path starts (x forward, y left)"></textarea>
-      <button id="wpsend">Send waypoints</button>
-    </div>
-    <div id="pane-ros" class="pane" hidden>
-      <p class="hint">Uses the latest /cmd_vel from the ROS 2 wrapper (zero if older than 0.5 s). The heartbeat from this page is still the deadman.</p>
-    </div>
-    <button id="holdbtn" class="hold" hidden title="Hold to run: the robot follows the path / cmd_vel only while this is pressed">HOLD TO RUN</button>
-  </section>
 
-  <section class="card">
-    <h2>Plots (60 s)</h2>
-    <canvas id="plotv" width="560" height="140"></canvas>
-    <canvas id="plots" width="560" height="140"></canvas>
-    <p class="legend"><i class="l1"></i>vx target <i class="l2"></i>vx sent <i class="l3"></i>wz sent <i class="l4"></i>gyro z
-      &nbsp;|&nbsp; <i class="l5"></i>state age ms <i class="l6"></i>tilt deg <i class="l7"></i>loop Hz/10</p>
-  </section>
-
-  <section class="card">
-    <h2>Robot</h2>
-    <pre id="robot">-</pre>
-    <div id="cams"></div>
-    <div id="lowcmd" hidden>
-      <h3>Low-level path (policy controller on the robot)</h3>
-      <p class="hint">HOLD STEP. Releasing the vendor motion mode means the vendor controller stops balancing: the robot must hang in the gantry.
-        Type <b>RELEASE VENDOR MODE</b>.</p>
-      <input id="reltext" autocomplete="off" spellcheck="false"> <button id="relbtn" class="danger">Release</button>
+    <div class="col mid">
+      <div class="glass card cam">
+        <div class="lbl">Front camera</div>
+        <div class="camwrap">
+          <img id="camimg" alt="Front camera" hidden>
+          <div class="nocam" id="nocam">No camera image yet</div>
+          <div class="chip camchip" id="obsChip"><i class="dot"></i><span id="obsTxt">No obstacle sensor</span></div>
+        </div>
+        <div class="limitbar"><span class="lbl">Speed allowed</span><div class="meter"><i id="limitFill"></i></div><b id="limitTxt">-</b></div>
+      </div>
+      <div class="glass card say">
+        <div class="lbl">Tell the robot what to do</div>
+        <div class="row"><input id="sayin" autocomplete="off" placeholder="walk forward two metres"><button id="saybtn" class="btn primary">Send</button></div>
+        <div id="sayLog" class="saylog"></div>
+        <p class="help">Every sentence waits for your Confirm, then the robot still moves only while you hold the walk button.</p>
+      </div>
     </div>
-  </section>
 
-  <section class="card">
-    <h2>Events</h2>
-    <ul id="events" class="events"></ul>
-    <h3>Logs</h3>
-    <ul id="logs"></ul>
-  </section>
-</main>
+    <div class="col right">
+      <div class="glass card">
+        <div class="lbl">Joystick</div>
+        <canvas id="pad" width="260" height="260" aria-label="Joystick: drag up to walk forward, sideways to turn"></canvas>
+        <label class="slider"><span class="lbl">Speed</span><input id="scale" type="range" min="10" max="100" value="50"><b id="scaleval">50%</b></label>
+        <button id="holdbtn" class="hold" disabled>Hold to walk</button>
+        <p class="help" id="holdHelp">Arm first. Keys: W S forward and back, A D turn, Q E sideways.</p>
+      </div>
+      <div class="glass card">
+        <div class="lbl">Safety (S1)</div>
+        <div class="kv"><span>Max forward</span><b id="envF">-</b></div>
+        <div class="kv"><span>Max turn</span><b id="envW">-</b></div>
+        <div class="kv"><span>Stops if link is silent for</span><b id="envD">-</b></div>
+        <div class="kv"><span>Control loop</span><b id="loopTxt">-</b></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ====================================================== SENSORS -->
+  <main class="view" id="view-sensors" hidden>
+    <div class="glass card map">
+      <div class="lbl">3D view</div>
+      <div class="layers" id="layers">
+        <button class="pill on" data-layer="cloud">Lidar points</button>
+        <button class="pill on" data-layer="trail">Path walked</button>
+        <button class="pill on" data-layer="obstacle">Obstacle zone</button>
+        <button class="pill on" data-layer="plan">Floor plan</button>
+      </div>
+      <canvas id="map3d" width="900" height="640" aria-label="3D map of the robot's sensors"></canvas>
+      <div class="legend"><span><i class="dot d-robot"></i>Robot</span><span><i class="dot d-trail"></i>Path</span><span><i class="dot d-cloud"></i>Lidar</span><span><i class="dot d-obs"></i>Obstacle</span><span class="grow"></span><span class="faint">Drag to rotate, scroll to zoom</span></div>
+      <p class="help" id="mapNote"></p>
+    </div>
+    <div class="col side">
+      <div class="glass card"><div class="lbl">Odometry</div><div id="odom"></div></div>
+      <div class="glass card"><div class="lbl">Body</div><div id="body"></div></div>
+      <div class="glass card"><div class="lbl">Sensors alive</div><div id="alive"></div><p class="help">A sensor silent for more than 0.3 s counts as dead and the robot stops.</p></div>
+      <div class="glass card"><div class="lbl">Obstacle stop</div><div class="big" id="obsBig">-</div><p class="help" id="obsHelp"></p></div>
+    </div>
+  </main>
+
+  <!-- ====================================================== SAFETY TESTS -->
+  <main class="view" id="view-safety" hidden>
+    <div class="glass card tests">
+      <div class="head"><div><div class="title">Safety tests</div><p class="help">Each test breaks one thing in the simulator and checks that the robot stops.</p></div></div>
+      <div id="testList"></div>
+      <p class="help" id="testNote"></p>
+    </div>
+    <div class="col side2">
+      <div class="glass card"><div class="lbl">Simulator now</div><div id="simNow"></div></div>
+      <div class="glass card"><div class="lbl">Events</div><ul class="events" id="events"></ul></div>
+      <div class="glass card"><div class="lbl">Logs</div><ul id="logs"></ul></div>
+    </div>
+  </main>
+
+</div>
 <script src="app.js"></script>
 </body>
 </html>
