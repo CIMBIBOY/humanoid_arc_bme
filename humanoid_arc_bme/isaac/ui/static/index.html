@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>G1 simulation view</title>
+<style>
+:root{--bg:#0f1318;--panel:#171d24;--line:#2a323c;--text:#dfe6ee;--dim:#8a97a6;--ok:#3fb27f;--warn:#e0a030;--bad:#e5484d;--acc:#4c9aff;
+--b0:#5d7a9a;--b1:#2fb7a8;--b2:#f08a24;--b3:#a074e0}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.35 system-ui,sans-serif;display:grid;grid-template-rows:auto 1fr;overflow:hidden}
+header{display:flex;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+header h1{font-size:15px;margin:0 8px 0 0}
+.badge{padding:3px 9px;border-radius:12px;background:#222b35;color:var(--dim);white-space:nowrap}
+.badge.ok{background:#173a2c;color:#7be0b0}.badge.warn{background:#3d3010;color:#f0c060}.badge.bad{background:#40181a;color:#ff8a8e}
+#stop{margin-left:auto;background:var(--bad);color:#fff;border:0;border-radius:8px;padding:9px 26px;font-weight:700;font-size:16px;cursor:pointer}
+#stop:active{filter:brightness(.85)}
+main{display:grid;grid-template-columns:270px 1fr;min-height:0}
+aside{border-right:1px solid var(--line);padding:10px;overflow:auto;display:flex;flex-direction:column;gap:12px;background:var(--panel)}
+section.box{border:1px solid var(--line);border-radius:8px;padding:9px}
+section.box h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin:0 0 7px}
+button,select,input[type=text]{font:inherit;color:var(--text);background:#222b35;border:1px solid var(--line);border-radius:6px;padding:6px 10px}
+button{cursor:pointer}button:hover{border-color:var(--acc)}button:disabled{opacity:.4;cursor:default}
+button.primary{background:#1c4a8a;border-color:#2f6ac0}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+#hold{width:100%;padding:16px;font-weight:700;font-size:15px;user-select:none;touch-action:none}
+#hold.on{background:#1d5a3f;border-color:var(--ok)}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:6px}.pad button{padding:10px 0;user-select:none;touch-action:none}
+.hint{color:var(--dim);font-size:12px}
+.tabs{display:flex;gap:4px;padding:8px 10px 0;border-bottom:1px solid var(--line)}
+.tab{padding:7px 16px;border-radius:7px 7px 0 0;background:transparent;border:1px solid transparent;border-bottom:0;color:var(--dim);cursor:pointer}
+.tab.on{background:var(--bg);border-color:var(--line);color:var(--text)}
+#views{display:grid;grid-template-rows:auto 1fr;min-height:0}
+.view{display:none;min-height:0;padding:10px;overflow:auto}.view.on{display:grid}
+#v-map{grid-template-columns:1fr 250px;gap:10px;height:100%}
+#mapwrap{position:relative;min-height:300px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#0b0e12}
+#map{width:100%;height:100%;display:block;cursor:crosshair}
+#maptools{position:absolute;left:8px;top:8px;display:flex;gap:10px;background:#0b0e12cc;padding:5px 9px;border-radius:7px;font-size:12px;flex-wrap:wrap}
+#legend{position:absolute;left:8px;bottom:8px;background:#0b0e12cc;padding:6px 9px;border-radius:7px;font-size:12px}
+#legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 4px 0 9px}
+#cams{display:flex;flex-direction:column;gap:8px;overflow:auto}
+.cam{border:1px solid var(--line);border-radius:7px;overflow:hidden;background:#000}.cam img{width:100%;display:block;min-height:60px}
+.cam div{font-size:11px;padding:3px 7px;color:var(--dim);background:var(--panel)}
+.grad{height:8px;margin:3px 0;border-radius:4px}
+#v-sem{grid-template-columns:1fr 1fr;gap:12px;align-content:start}
+#v-sem .cam img{min-height:200px}
+#detlist,#scenelist{font-size:13px}#scenelist table{width:100%;border-collapse:collapse}#scenelist td,#scenelist th{padding:3px 6px;border-bottom:1px solid var(--line);text-align:left}
+#v-lang{grid-template-rows:auto auto 1fr;gap:10px;align-content:start;max-width:900px}
+#log{border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;min-height:200px;background:#0b0e12}
+.msg{margin:0 0 8px;padding:6px 9px;border-radius:7px;max-width:90%}.me{background:#1c3556;margin-left:auto}.bot{background:#222b35}.err{background:#40181a}
+#sentence{flex:1;min-width:200px;padding:10px}
+#toast{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:#222b35;border:1px solid var(--line);padding:8px 16px;border-radius:8px;display:none;z-index:9}
+#conn{position:fixed;inset:0;background:#000b;display:none;place-items:center;z-index:8;font-size:18px}
+#conn.on{display:grid}
+details summary{cursor:pointer;color:var(--dim);font-size:12px}
+@media(max-width:900px){main{grid-template-columns:1fr;overflow:auto}aside{border-right:0;border-bottom:1px solid var(--line)}#v-map{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>G1 simulation</h1>
+  <span id="b-arm" class="badge">disarmed</span>
+  <span id="b-safe" class="badge">safety -</span>
+  <span id="b-task" class="badge">idle</span>
+  <span id="b-pose" class="badge">pose -</span>
+  <span id="b-rtf" class="badge">-</span>
+  <button id="stop" title="Esc or Space">STOP</button>
+</header>
+<main>
+<aside>
+  <section class="box">
+    <h2>Operate</h2>
+    <div class="row"><button id="arm" class="primary">Arm</button><button id="disarm">Disarm</button><button id="reset" title="Put the robot back at its start pose and restart the controller">Reset robot</button></div>
+    <div id="armmsg" class="hint" style="margin:6px 0">Disarmed: nothing moves until you arm.</div>
+    <button id="hold">HOLD TO RUN</button>
+    <label class="hint"><input type="checkbox" id="latch" onchange="this.blur()"> keep running without holding (STOP still works)</label>
+    <div class="pad" id="pad"><button data-k="q">&#8630;</button><button data-k="w">&#9650;</button><button data-k="e">&#8631;</button>
+      <button data-k="a">&#9664;</button><button data-k="s">&#9660;</button><button data-k="d">&#9654;</button></div>
+    <div class="hint">Keys: W/S forward/back, A/D sideways, Q/E turn (hold). The robot moves only while a heartbeat says HOLD.</div>
+  </section>
+  <section class="box">
+    <h2>Status</h2>
+    <div id="status" class="hint"></div><div id="status-extra" class="hint" style="color:var(--warn)"></div>
+  </section>
+  <section class="box">
+    <h2>What is real here</h2>
+    <div id="standins" class="hint"></div>
+  </section>
+  <details class="box"><summary>Fault tests</summary>
+    <div id="faults" class="row" style="margin-top:8px"></div>
+    <div class="hint">Switch a fault on while the robot walks: it must reach a safe stop.</div>
+  </details>
+</aside>
+<div id="views">
+  <div class="tabs"><button class="tab on" data-v="map">Map &amp; cameras</button><button class="tab" data-v="sem">Semantics</button><button class="tab" data-v="lang">Language</button></div>
+  <div class="view on" id="v-map">
+    <div id="mapwrap"><canvas id="map"></canvas>
+      <div id="maptools"><label><input type="checkbox" id="t-plan" checked> scene plan (ground truth)</label><label><input type="checkbox" id="t-map" checked> lidar map</label>
+        <label><input type="checkbox" id="t-follow"> follow robot</label><span class="hint" id="goalhint">click the map to send a goal</span></div>
+      <div id="legend">lidar by height: <i style="background:var(--b0)"></i>floor<i style="background:var(--b1)"></i>low<i style="background:var(--b2)"></i>body<i style="background:var(--b3)"></i>overhead
+        &nbsp; | &nbsp;<span style="color:#7be0b0">&#9650;</span> estimated pose <span style="color:#888">&#9651;</span> true pose</div></div>
+    <div id="cams">
+      <div class="cam"><img id="i-d435_rgb" alt=""><div>D435 colour (looks 48&deg; down)</div></div>
+      <div class="cam"><img id="i-d435_depth" alt=""><div>D435 depth <span id="g-d435"></span></div></div>
+      <div class="cam"><img id="i-head_rgb" alt=""><div>Head camera colour (forward, placeholder mount)</div></div>
+      <div class="cam"><img id="i-head_depth" alt=""><div>Head depth <span id="g-head"></span></div></div>
+    </div>
+  </div>
+  <div class="view" id="v-sem">
+    <div><div class="cam"><img id="i-d435_sem" alt=""><div id="sem-d435-t">D435 (the camera the robot acts on)</div></div><div id="detlist" class="hint" style="margin-top:6px"></div></div>
+    <div><div class="cam"><img id="i-head_sem" alt=""><div>Head camera (display only)</div></div></div>
+    <div id="scenelist" style="grid-column:1/-1"></div>
+  </div>
+  <div class="view" id="v-lang">
+    <div class="row"><span class="hint">Understanding:</span>
+      <select id="parser"><option value="grammar">grammar only</option><option value="jev">grammar + Jev (fake)</option><option value="jev_outage">grammar + Jev (outage)</option></select>
+      <span id="parsersrc" class="hint"></span></div>
+    <div class="row"><input type="text" id="sentence" placeholder="go forward 1 meters   /   turn left 90 degrees   /   go to the red cup   /   stop"><button id="send" class="primary">Send</button></div>
+    <div class="row" id="chips"></div>
+    <div class="hint">The grammar understands moves, turns, pick, place, stop and status. Jev (fake here) is asked only for sentences the grammar rejects, e.g. "go to the cup"; numbers and objects always come from the grammar. Every command waits for Confirm, then needs HOLD to move.</div>
+    <div id="log"></div>
+  </div>
+</div>
+</main>
+<div id="toast"></div>
+<div id="conn"><div>Connection to the simulator lost &mdash; the robot stops by itself without heartbeats. Retrying&hellip;</div></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const tok=new URLSearchParams(location.hash.slice(1)).get("token")||sessionStorage.getItem("tok")||"";
+if(tok)sessionStorage.setItem("tok",tok);
+const client="ui-"+Math.random().toString(36).slice(2,8);
+const H={"Authorization":"Bearer "+tok,"X-Client":client};
+let lastMode="ros", S=null, plan=null, view="map", keys=new Set(), holdBtn=false, padKey=null, mode="ros", lastOk=0, busy=false;
+function toast(t,ms){const e=$("toast");e.textContent=t;e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display="none",ms||2500)}
+async function api(path,body,ms){
+  const ac=new AbortController(),t=setTimeout(()=>ac.abort(),ms||3000);
+  try{const r=await fetch(path,{method:body===undefined?"GET":"POST",headers:{...H,...(body!==undefined?{"Content-Type":"application/json"}:{})},body:body===undefined?undefined:JSON.stringify(body),signal:ac.signal});
+    let j=null;try{j=await r.json()}catch(e){}return{ok:r.ok,status:r.status,j}}
+  catch(e){return{ok:false,status:0,j:null}}finally{clearTimeout(t)}}
+// ---------------------------------------------------------------- STOP
+async function stop(){
+  keys.clear();holdBtn=false;padKey=null;$("latch").checked=false;$("hold").classList.remove("on");
+  const m=$("armmsg");m.textContent="STOP sending...";
+  for(let i=0;i<4;i++){const ac=new AbortController(),t=setTimeout(()=>ac.abort(),600);
+    try{const r=await fetch("/api/stop",{method:"POST",signal:ac.signal});const j=await r.json();
+      if(j&&j.confirmed){m.textContent="STOP confirmed. Arm to run again.";return}}catch(e){}finally{clearTimeout(t)}}
+  m.textContent="STOP NOT CONFIRMED - release HOLD and use the remote";m.style.color="var(--bad)"}
+$("stop").onclick=stop;
+// ---------------------------------------------------------------- operate
+$("arm").onclick=async()=>{const r=await api("/api/arm",{});const m=$("armmsg");m.style.color="";
+  m.textContent=r.j&&r.j.ok?"Armed. Hold the button (or W/A/S/D) to move.":"Not armed: "+((r.j&&(r.j.reason||r.j.error))||"no answer")};
+$("disarm").onclick=async()=>{await api("/api/disarm",{});$("armmsg").textContent="Disarmed."};
+$("reset").onclick=async()=>{$("armmsg").textContent="Resetting (about 5 s)...";const r=await api("/api/reset",{},35000);
+  $("armmsg").textContent=r.j&&r.j.ok?"Robot reset and disarmed.":"Reset failed: "+((r.j&&r.j.error)||"no answer")};
+const hold=$("hold");
+const holdOn=e=>{e.preventDefault();holdBtn=true;hold.classList.add("on")},holdOff=()=>{holdBtn=false;hold.classList.remove("on")};
+hold.addEventListener("pointerdown",holdOn);addEventListener("pointerup",holdOff);addEventListener("pointercancel",holdOff);addEventListener("blur",()=>{holdOff();keys.clear()});
+document.querySelectorAll("#pad button").forEach(b=>{b.addEventListener("pointerdown",e=>{e.preventDefault();padKey=b.dataset.k});b.addEventListener("pointerup",()=>padKey=null);b.addEventListener("pointerleave",()=>padKey=null)});
+addEventListener("keydown",e=>{const ae=document.activeElement,typing=ae.tagName==="SELECT"||(ae.tagName==="INPUT"&&ae.type==="text");
+  if(e.key==="Escape"||(e.code==="Space"&&!typing)){e.preventDefault();stop();return}
+  if(!typing&&"wasdqe".includes(e.key.toLowerCase())&&e.key.length===1){keys.add(e.key.toLowerCase());e.preventDefault()}});
+addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
+function velocity(){const k=padKey?new Set([padKey]):keys,lim=(S&&S.limits)||[0.2,0.1,0.3];
+  const ax=(k.has("w")?1:0)-(k.has("s")?1:0),ay=(k.has("a")?1:0)-(k.has("d")?1:0),az=(k.has("q")?1:0)-(k.has("e")?1:0);
+  return{active:k.size>0,vx:ax*Math.min(0.2,lim[0]),vy:ay*Math.min(0.1,lim[1]),wz:az*Math.min(0.3,lim[2])}}
+async function beat(){ // the operator's heartbeat: 10 Hz, also the state feed
+  if(busy)return;busy=true;
+  const v=velocity(),m=v.active?"teleop":mode;
+  // the supervisor wants a released input after the input source changes (hold-to-run): the first beat of a new mode is never "held"
+  const held=(holdBtn||v.active||$("latch").checked)&&m===lastMode;lastMode=m;
+  const r=await api("/api/heartbeat",{held,mode:m,vx:v.vx,vy:v.vy,wz:v.wz},900);
+  busy=false;
+  if(r.ok&&r.j){lastOk=Date.now();S=r.j;render();if(r.j.heartbeat_error)$("armmsg").textContent="Heartbeat refused: "+r.j.heartbeat_error}
+  $("conn").classList.toggle("on",Date.now()-lastOk>2500)}
+setInterval(beat,100);
+// ---------------------------------------------------------------- header + status
+function badge(id,text,cls){const e=$(id);e.textContent=text;e.className="badge "+(cls||"")}
+function render(){
+  const s=S;if(!s||!s.ready)return;
+  badge("b-arm",s.fault?"FAULT "+s.fault:s.armed?(s.held?"armed, running":"armed, hold to run"):s.stop_latched?"stopped":"disarmed",s.fault?"bad":s.armed?(s.held?"ok":"warn"):"");
+  const lv=s.safety.level;badge("b-safe","safety "+lv+(s.safety.reasons.length?" ("+s.safety.reasons.join(", ")+")":""),lv==="ok"?"ok":lv==="slow"?"warn":"bad");
+  const t=s.task;badge("b-task",t.state==="idle"?"idle":(t.command||"task")+": "+t.state+(t.message?" - "+t.message:""),t.state==="running"?"warn":t.state==="succeeded"?"ok":t.state==="failed"?"bad":"");
+  const p=s.pose;badge("b-pose",p?`pose ${p.x.toFixed(2)}, ${p.y.toFixed(2)}  ${(p.yaw*57.3).toFixed(0)}°`+(p.healthy?"":" LOST"):"pose none",p&&p.healthy?"ok":"bad");
+  badge("b-rtf","t "+s.t.toFixed(0)+" s  x"+s.rtf.toFixed(2),s.rtf<0.7?"warn":"");
+  const tr=s.truth;
+  $("status").innerHTML=`speed command: ${s.cmd.map(v=>v.toFixed(2)).join(" / ")} (vx vy wz)<br>supervisor: ${s.supervisor}${s.deploy.running?"":" &middot; <b style='color:var(--bad)'>controller stopped</b>"}${s.motors_passive?" &middot; <b style='color:var(--bad)'>motors passive</b>":""}`
+   +`<br>robot: ${tr.fallen?"<b style='color:var(--bad)'>FALLEN</b>":"upright, tilt "+tr.tilt_deg+"°"}<br>navigation: ${s.nav.state||"-"}`;
+  const ex=$("status-extra");ex.textContent=[s.teleop_guard,s.autonomy_error].filter(Boolean).join(" | ");
+  $("standins").innerHTML=`locomotion: stand-in policy (AGILE) behind the SONIC interface<br>pose: simulator truth + noise (DLIO is not run)<br>detector: ${s.detector.name}${s.detector.ms?" ("+s.detector.ms+" ms)":""}<br>Jev: fake (placeholder schema)<br>guard profile: ${s.guard_profile}`;
+  $("parsersrc").textContent=s.parser.mode==="grammar"?"":`last sentence understood by: ${s.parser.source}${s.parser.error?"  ("+s.parser.error+")":""}  |  Jev calls ${s.parser.jev_calls}`;
+  if(s.parser.mode!==$("parser").value&&document.activeElement!==$("parser"))$("parser").value=s.parser.mode;
+  if(s.task.state==="running"&&s.armed&&!s.held)$("armmsg").textContent="A task is running: hold the button to let the robot move.";
+  document.querySelectorAll("#faults button").forEach(b=>{const on=!!(s.faults&&s.faults[b.dataset.k]);b.dataset.on=on?"1":"0";b.className=on?"primary":""});
+  if(view==="sem")renderSem(s);
+  $("goalhint").textContent=s.goal?`goal ${s.goal.x.toFixed(1)}, ${s.goal.y.toFixed(1)} (${s.nav.state||"-"})`:"click the map to send a goal"}
+// ---------------------------------------------------------------- faults
+const FAULTS=[["depth_dropout","Depth dropout"],["stale_frames","Stale camera"],["localizer_lost","Pose lost"],["lowstate_lost","State link lost"],["controller_exit","Controller exits"]];
+FAULTS.forEach(([k,l])=>{const b=document.createElement("button");b.textContent=l;b.dataset.on="0";b.dataset.k=k;
+  b.onclick=async()=>{const on=b.dataset.on==="0";const r=await api("/api/fault",{name:k,on});if(r.j&&r.j.ok){toast(on?l+" on":l+" off");if(r.j.note)toast(r.j.note,5000)}else toast("failed: "+((r.j&&r.j.error)||"no answer"))};
+  $("faults").appendChild(b)});
+// ---------------------------------------------------------------- tabs
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{view=t.dataset.v;document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===t));
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on",v.id==="v-"+view));if(view==="map")drawMap();if(S)render()});
+// ---------------------------------------------------------------- images (fetched with the token; one request in flight per image)
+const IMGS={map:["d435_rgb","d435_depth","head_rgb","head_depth"],sem:["d435_sem","head_sem"],lang:[]},inflight={},lastFrame={};
+async function pullImages(){for(const n of IMGS[view]||[]){if(inflight[n])continue;inflight[n]=true;
+  try{const r=await fetch(`/api/img/${n}.jpg`,{headers:H,cache:"no-store"});if(r.ok){const f=r.headers.get("X-Frame");if(f!==lastFrame[n]){lastFrame[n]=f;const u=URL.createObjectURL(await r.blob()),im=$("i-"+n),old=im.src;im.src=u;if(old.startsWith("blob:"))URL.revokeObjectURL(old)}}}catch(e){}finally{inflight[n]=false}}}
+setInterval(pullImages,250);
+function legendGrad(){const st=plan.depth.stops;const g="linear-gradient(90deg,"+st.map(c=>`rgb(${c})`).join(",")+")";
+  for(const k of["d435","head"]){const r=plan.depth.range[k];$("g-"+k).innerHTML=`<div class="grad" style="background:${g}"></div>${r[0]} m ... ${r[1]} m, grey = no depth`}}
+// ---------------------------------------------------------------- semantics
+function renderSem(s){const d=s.detections||{};
+  $("detlist").innerHTML="D435: "+((d.d435||[]).map(x=>`${x.label} ${Math.round(x.confidence*100)}%`).join(", ")||"nothing detected")+"<br>Head: "+((d.head||[]).map(x=>`${x.label} ${Math.round(x.confidence*100)}%`).join(", ")||"nothing detected");
+  const rows=s.scene.map(o=>`<tr><td>${o.label}</td><td>${o.color}</td><td>${o.range_m} m</td><td>${o.x}, ${o.y}, ${o.z}</td><td>${o.confidence}</td></tr>`).join("");
+  $("scenelist").innerHTML=`<h2 class="hint" style="margin:0 0 4px">What the robot knows (D435 detections with depth, body frame x fwd, y left, z up)</h2>`+
+   (rows?`<table><tr><th>object</th><th>colour</th><th>range</th><th>position (m)</th><th>conf.</th></tr>${rows}</table>`:`<div class="hint">no objects in memory</div>`)}
+// ---------------------------------------------------------------- map
+const cv=$("map"),cx=cv.getContext("2d");let CL=null,MAPC=[],tf={s:40,ox:0,oy:0};
+const BC=["#5d7a9a","#2fb7a8","#f08a24","#a074e0"];
+function fit(){const r=cv.parentElement.getBoundingClientRect();cv.width=r.width*devicePixelRatio;cv.height=r.height*devicePixelRatio}
+function bounds(){if(!plan)return[-3,-3,3,3];let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const r of plan.rooms){x0=Math.min(x0,r.rect[0]);y0=Math.min(y0,r.rect[1]);x1=Math.max(x1,r.rect[2]);y1=Math.max(y1,r.rect[3])}return[x0-0.5,y0-0.5,x1+0.5,y1+0.5]}
+function setTf(){const W=cv.width,Hh=cv.height;if($("t-follow").checked&&S&&S.pose){tf.s=Math.min(W,Hh)/9;tf.ox=W/2-S.pose.x*tf.s;tf.oy=Hh/2+S.pose.y*tf.s;return}
+  const b=bounds(),s=Math.min(W/(b[2]-b[0]),Hh/(b[3]-b[1]));tf.s=s;tf.ox=(W-(b[2]-b[0])*s)/2-b[0]*s;tf.oy=(Hh+(b[3]-b[1])*s)/2+b[1]*s}
+const X=x=>x*tf.s+tf.ox,Y=y=>tf.oy-y*tf.s;
+function arrow(x,y,yaw,size,fill,stroke){cx.save();cx.translate(X(x),Y(y));cx.rotate(-yaw);cx.beginPath();cx.moveTo(size,0);cx.lineTo(-size*.7,size*.7);cx.lineTo(-size*.4,0);cx.lineTo(-size*.7,-size*.7);cx.closePath();
+  if(fill){cx.fillStyle=fill;cx.fill()}if(stroke){cx.strokeStyle=stroke;cx.lineWidth=2;cx.stroke()}cx.restore()}
+function drawMap(){if(view!=="map"||!plan)return;fit();setTf();const W=cv.width;cx.clearRect(0,0,W,cv.height);
+  if($("t-plan").checked){cx.fillStyle="#1a2129";cx.strokeStyle="#2b3541";cx.lineWidth=1;for(const[px,py,hx,hy,yaw]of plan.rects){cx.save();cx.translate(X(px),Y(py));cx.rotate(-yaw);cx.fillRect(-hx*tf.s,-hy*tf.s,2*hx*tf.s,2*hy*tf.s);cx.strokeRect(-hx*tf.s,-hy*tf.s,2*hx*tf.s,2*hy*tf.s);cx.restore()}
+    for(const d of plan.doors){cx.strokeStyle=d.state==="closed"?"#a0603a":"#4a7a4a";cx.beginPath();cx.arc(X(d.x),Y(d.y),0.22*tf.s,0,7);cx.stroke()}}
+  const dot=Math.max(1.5,tf.s*0.05)*devicePixelRatio/2;
+  if($("t-map").checked){cx.globalAlpha=0.55;for(let i=0;i<MAPC.length;i+=3){cx.fillStyle=BC[MAPC[i+2]];cx.fillRect(X(MAPC[i]/100)-dot,Y(MAPC[i+1]/100)-dot,2*dot,2*dot)}cx.globalAlpha=1}
+  if(CL){const sc=CL.scan;for(let i=0;i<sc.length;i+=3){cx.fillStyle=BC[sc[i+2]];cx.fillRect(X(sc[i]/100)-dot,Y(sc[i+1]/100)-dot,2*dot,2*dot)}
+    cx.strokeStyle="#7be0b066";cx.lineWidth=2;cx.beginPath();for(let i=0;i<CL.trail.length;i+=2){const x=X(CL.trail[i]),y=Y(CL.trail[i+1]);i?cx.lineTo(x,y):cx.moveTo(x,y)}cx.stroke()}
+  if(S&&S.goal){cx.strokeStyle="#ffd34d";cx.lineWidth=2;const gx=X(S.goal.x),gy=Y(S.goal.y);cx.beginPath();cx.arc(gx,gy,10,0,7);cx.moveTo(gx-14,gy);cx.lineTo(gx+14,gy);cx.moveTo(gx,gy-14);cx.lineTo(gx,gy+14);cx.stroke()}
+  if(S&&S.truth)arrow(S.truth.x,S.truth.y,S.truth.yaw,13,null,"#888");
+  if(S&&S.pose)arrow(S.pose.x,S.pose.y,S.pose.yaw,11,S.pose.healthy?"#7be0b0":"#e5484d")}
+async function pullCloud(){if(view!=="map")return;const r=await api("/api/cloud",undefined,1500);if(r.ok&&r.j)CL=r.j;drawMap()}
+async function pullMap(){if(view!=="map")return;const r=await api("/api/map",undefined,2500);if(r.ok&&r.j)MAPC=r.j.cells}
+setInterval(pullCloud,250);setInterval(pullMap,1000);addEventListener("resize",drawMap);["t-plan","t-map","t-follow"].forEach(i=>$(i).onchange=drawMap);
+cv.addEventListener("click",async e=>{if(!S||!S.pose)return;const r=cv.getBoundingClientRect(),px=(e.clientX-r.left)*devicePixelRatio,py=(e.clientY-r.top)*devicePixelRatio;
+  const x=(px-tf.ox)/tf.s,y=(tf.oy-py)/tf.s;mode="waypoints";const a=await api("/api/goal",{x,y});
+  if(a.j&&a.j.ok)toast("Goal sent: arm, then hold to run");else{mode="ros";toast("Goal refused: "+((a.j&&a.j.error)||"no answer"),4000)}});
+// ---------------------------------------------------------------- language
+function say(text,cls){const d=document.createElement("div");d.className="msg "+cls;d.textContent=text;$("log").appendChild(d);$("log").scrollTop=1e9;return d}
+async function confirmBtns(d,id){const row=document.createElement("div");row.className="row";row.style.marginTop="6px";
+  const ok=document.createElement("button");ok.textContent="Confirm";ok.className="primary";const no=document.createElement("button");no.textContent="Cancel";row.append(ok,no);d.appendChild(row);
+  ok.onclick=async()=>{row.remove();mode="ros";const r=await api("/gw/api/confirm",{id});const s=r.j&&r.j.status;say(s?`started: ${s.state}${s.message?" - "+s.message:""}`+(s.state==="running"?"  (hold to run)":""):"could not start: "+((r.j&&r.j.detail)||"no answer"),s&&s.state!=="failed"?"bot":"err")};
+  no.onclick=async()=>{row.remove();await api("/gw/api/cancel",{});say("cancelled","bot")}}
+async function sendSentence(){const t=$("sentence").value.trim();if(!t)return;$("sentence").value="";say(t,"me");
+  const r=await api("/gw/api/command",{text:t},8000);const j=r.j;
+  if(!r.ok||!j){say(r.status===0?"no answer from the simulator":"refused ("+r.status+"): "+((j&&j.detail)||""),"err");return}
+  if(!j.accepted){say("not understood: "+j.reason,"err");return}
+  if(j.executed){say(j.answer?"status: "+JSON.stringify(j.answer.task||j.answer):"done","bot");return}
+  const d=say("understood: "+JSON.stringify(j.command),"bot");confirmBtns(d,j.id)}
+["go forward 1 meters","turn left 90 degrees","go to the cup","status","stop"].forEach(t=>{const b=document.createElement("button");b.textContent=t;b.onclick=()=>{$("sentence").value=t;sendSentence()};$("chips").appendChild(b)});
+$("send").onclick=sendSentence;$("sentence").addEventListener("keydown",e=>{if(e.key==="Enter")sendSentence()});
+$("parser").onchange=async()=>{const r=await api("/api/parser",{mode:$("parser").value});if(!(r.j&&r.j.ok))toast("failed: "+((r.j&&r.j.error)||"no answer"))};
+const startView=new URLSearchParams(location.hash.slice(1)).get("view");if(startView&&IMGS[startView])document.querySelector(`.tab[data-v="${startView}"]`).click();
+// ---------------------------------------------------------------- start
+async function loadPlan(){const r=await api("/api/plan");if(r.ok){plan=r.j;legendGrad();drawMap();return}
+  $("armmsg").textContent=r.status===401?"Wrong or missing token: open the address printed by the launcher (it ends in #token=...)":"Cannot reach the simulator, retrying...";if(r.status!==401)setTimeout(loadPlan,2000)}
+loadPlan();
+</script>
+</body>
+</html>
