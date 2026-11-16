@@ -50,6 +50,9 @@ class AutonomyLoop:
             if self._armed_before and not armed:
                 with self.lock:
                     self.stack.stop("disarmed")                 # a disarm ends the task; re-arming does not resume it
+            if armed and not self._armed_before and hasattr(self.stack, "reset_perception"):
+                with self.lock:
+                    self.stack.reset_perception()               # re-armed: nothing seen before the disarm is trusted
             self._armed_before = armed
             frame = self.hub.frame(now, self.rt.state, safe=armed and not self.rt.fault)
             self.latest = frame

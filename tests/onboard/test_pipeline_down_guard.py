@@ -102,3 +102,40 @@ def test_floor_the_camera_cannot_see_reads_as_a_drop_edge_not_as_clear():
 def test_bad_guard_camera_rejected():
     with pytest.raises(ValueError, match="guard_camera"):
         PipelineRunner(RunnerConfig(guard_camera="rear"))
+
+
+# ---- the robot's own body in the down camera (found in Isaac Sim 2026-11-14: the CPU simulator never renders the robot)
+FEET = [Box(0.05, 0.22, -0.16, 0.16, 0.10)]                 # toes and shins as the 50-degree-down camera sees them
+
+
+def drive_cfg(cfg, boxes, n=30):
+    r = PipelineRunner(cfg)
+    outs = [tick(r, i * DT, down_frame(i * DT, boxes, seed=i)) for i in range(n)]
+    return outs
+
+
+def test_own_feet_stop_the_robot_without_the_self_mask_and_not_with_it():
+    blocked = drive_cfg(CFG_DOWN, FEET)
+    assert all(o.command_out == (0.0, 0.0, 0.0) for o in blocked[2:]) and "obstacle_stop" in blocked[-1].safety.reasons
+    masked = drive_cfg(dataclasses.replace(CFG_DOWN, camera_self_radius_m=0.30), FEET)
+    assert all(o.command_out == (VX, 0.0, 0.0) for o in masked[2:]), masked[-1].safety.reasons
+
+
+def test_self_mask_does_not_hide_an_obstacle_beyond_its_radius():
+    cfg = dataclasses.replace(CFG_DOWN, camera_self_radius_m=0.30)
+    outs = drive_cfg(cfg, FEET + [Box(0.45, 0.60, -0.2, 0.2, 0.30)])
+    assert outs[-1].command_out == (0.0, 0.0, 0.0) and outs[-1].safety.level == STOP
+    with pytest.raises(ValueError):
+        PipelineRunner(dataclasses.replace(CFG_DOWN, camera_self_radius_m=-0.1))
+
+
+def test_clearance_ahead_for_the_runtimes_obstacle_stage():
+    r = PipelineRunner(CFG_DOWN)
+    assert r.clearance_ahead(0.0) is None                       # never ticked: no reading (fail closed)
+    outs = [tick(r, i * DT, down_frame(i * DT, [Box(0.9, 1.0, -0.3, 0.3, 0.30)], seed=i)) for i in range(5)]
+    d = r.clearance_ahead(4 * DT)
+    assert d is not None and 0.4 < d <= outs[-1].clearance.distance_positive + 1e-9      # the costmap's inflated distance may be the nearer one
+    assert r.clearance_ahead(4 * DT + 2.0) is None              # stale
+    r2 = PipelineRunner(CFG_DOWN)
+    tick(r2, 0.0, down_frame(0.0)), tick(r2, 100.0, down_frame(100.0))     # a forward stamp glitch latches bad_stamp
+    assert r2.clearance_ahead(100.0) is None

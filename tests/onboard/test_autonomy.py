@@ -21,6 +21,15 @@ class StubStack:
         self.stopped.append(why)
 
 
+class ResetStack(StubStack):
+    def __init__(self):
+        super().__init__()
+        self.resets = 0
+
+    def reset_perception(self):
+        self.resets += 1
+
+
 class StubHub:
     def frame(self, now, state, safe=True):
         return SimpleNamespace(stamp=now, safe=safe) if state is not None else None
@@ -119,3 +128,25 @@ def test_arm_targets_reach_the_controller_and_are_released_when_absent(tmp_path)
     stack.arm = None
     drive(rt, clock, auto, 0.3)
     assert ctrl.released > 0
+
+
+def test_arming_again_resets_perception_once_per_arming(tmp_path):
+    rt, clock, fake = make(tmp_path)
+    stack = ResetStack()
+    auto = AutonomyLoop(rt, stack, StubHub(), clock=clock)
+    run(rt, clock, 1.2)
+    drive(rt, clock, auto, 0.5, held=False)
+    assert stack.resets == 0                                    # disarmed: nothing yet
+    release_once(rt, clock)
+    assert arm(rt)[0]
+    drive(rt, clock, auto, 0.5)
+    assert stack.resets == 1
+    drive(rt, clock, auto, 0.5)
+    assert stack.resets == 1                                    # not on every tick
+    rt.disarm("test")
+    drive(rt, clock, auto, 0.3, held=False)
+    release_once(rt, clock)
+    assert arm(rt)[0]
+    drive(rt, clock, auto, 0.5)
+    assert stack.resets == 2
+    rt.close()

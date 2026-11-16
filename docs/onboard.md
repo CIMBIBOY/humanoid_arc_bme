@@ -3,7 +3,8 @@
 Standalone: this repository is everything a university needs. Nothing here imports the private `arc` package (a test
 enforces it). The advanced repository replaces parts through the interfaces listed under "Overriding a part".
 
-Status: **validated in a CPU simulator and unit tests only. Nothing has run on the robot.** Every number tagged
+Status: **validated in a CPU simulator, in unit tests and (2026-11-14) in Isaac Sim with a stand-in locomotion policy. Nothing
+has run on the robot.** Every number tagged
 UNMEASURED is a placeholder until it has been measured (see "Calibration").
 
 ## What it does
@@ -52,6 +53,55 @@ Measured in it (seeded, with 5 mm localizer noise, random table height 0.68-0.76
 pick-and-place episodes succeeded. A single hand-tuned scene had hidden failures that randomisation found; keep
 randomising when you change anything.
 
+## Try it in Isaac Sim (the simulated G1, its sensors, the robot's own interfaces)
+
+`humanoid_arc_bme/isaac/` puts the same stack on Unitree's G1 asset in Isaac Sim 5.0 (CPU PhysX, 200 Hz). Nothing in `onboard/` is
+subclassed or changed for it: the simulator supplies the five objects the robot supplies (a `RobotIO`, a camera source, a lidar
+source, a localizer, a hand feed) and a transport for the planner messages, and `isaac/session.py` wires `OperatorRuntime`,
+`AutonomyLoop`, `SensorHub` and `GrootPlannerController` exactly as `runtime/cli.py` does.
+
+    planner messages (ZMQ wire format) -> deploy STAND-IN (isaac/standin.py) -> rt/lowcmd -> motor model -> PhysX
+    rt/lowstate + Dex3 state <- simulated robot;  D435 (down) + head RGB-D + Mid-360-like lidar + IMU <- isaac/sensors.py
+
+| piece | file | state |
+|---|---|---|
+| motor order, motor model | `onboard/g1_layout.py`, `isaac/g1_model.py`, `isaac/robot.py` | motor order from Unitree's SDK example and simulator (OPENED); every joint name checked against the asset in the simulator |
+| rt/lowcmd, rt/lowstate, Dex3 on DDS | `isaac/dds.py`, `isaac/lowlevel.py` | loopback only, own discovery tag, free domain; a controller in another process drives the robot through it (`scripts/isaac/g1_dds_gate.py`) |
+| the deploy | `isaac/standin.py`, `isaac/standin_main.py` | **STAND-IN**: the SONIC binary and ONNX files are not on the development machine. Same topics and documented behaviour (message used once, 1000 ms planner timeout, stop-control exits); the policy inside is NVIDIA AGILE |
+| sensors | `isaac/sensors.py`, `config/sensor_mounts.yaml`, `isaac/lidar_profiles/` | mounts equal the asset's frames (checked); lidar is a 40-line approximation of the Mid-360 rosette; depth noise is the stack's `DepthNoise` with guessed values |
+| scenes | `isaac/scene.py` | any folder with a `scene.json` manifest and its USD file; this package does not generate scenes |
+| scenarios | `isaac/scenarios.py`, `scripts/isaac/run_scenarios.py` | S1-S7 with reset by pose restore, the FastAPI gateway through an in-process HTTP client, the Jev fake |
+
+    ISAAC=<isaac-sim 5.0>/python.sh                       # scripts are run by path; Kit must start before numpy is imported
+    $ISAAC scripts/isaac/g1_loco_gate.py --out loco.json            # stand, walk, turn, stop, planner timeout, controller exit
+    $ISAAC scripts/isaac/g1_sensor_gate.py --out sensors.json       # each sensor against known geometry, mounts against the asset
+    python3 scripts/isaac/dds_loopback_check.py                     # DDS stays on loopback (no Kit)
+    $ISAAC scripts/isaac/g1_dds_gate.py --out dds.json --python <python with cyclonedds, unitree_sdk2py, torch, zmq>
+    $ISAAC scripts/isaac/run_scenarios.py --scene <scene dir> --out report.json
+
+Extra packages (not installed with the repository): `cyclonedds`, `unitree_sdk2py`, `pyzmq`, `httpx`; folders outside
+site-packages go in `$HUMANOID_ARC_DDS_PATHS`. Kit logs go to `$HUMANOID_ARC_KIT_LOGS`.
+
+What the simulator found that the CPU simulator could not (2026-11-14):
+* **The down camera sees the robot.** Feet, shins and hands fill about 14 % of the D435 image; the guard took them for obstacles
+  0.1-0.3 m ahead and the robot never moved. `RunnerConfig.camera_self_radius_m` (default 0 = off, as before) masks depth points
+  inside a body cylinder, like the lidar's mask; the simulated robot uses 0.40 m for both. UNMEASURED on the robot, and an arm that
+  reaches forward for a pick is outside any such cylinder.
+* **The guard cannot pass a door.** Corridor half width 0.35 m plus costmap inflation 0.30 m stop the robot for anything within
+  0.65 m of its path: it stops beside walls and in front of every 0.9 m door. With numbers sized to the body (0.27 m + 0.10 m,
+  a guess) it walks across rooms but still stops in front of doors. Door passage needs its own behaviour, not a parameter.
+* **The head lidar is blind near the floor.** Mounted 2.3 degrees down at 1.2 m, its nearest floor return is about 5 m away;
+  `near_observed` stays false, as the coverage study predicted. Objects taller than the head are seen.
+* **Objects on furniture are out of the down camera's view beyond about 0.6 m.** "Pick up the cup" from a metre away ends in "I do
+  not see any cup". The head camera sees them; the stack does not use it yet.
+* **Arm rest pose matters to perception.** At the joints' zero the forearms point forward into the camera's view. How SONIC carries
+  the arms decides what the D435 sees on the robot.
+* **A planner with a speed floor.** The stand-in policy ignores commands under about 0.15 m/s and 0.9 rad/s (learned). The stand-in
+  hides that with closed-loop bursts; SONIC's documented slow-walk range also starts at 0.2 m/s, the top of S1's limit. The adapter's
+  `min_walk_speed` would RAISE a capped speed to the floor: do not use it as it is.
+* A second stack tick with the same time stamp latches `bad_stamp` (by design). Anything that steps the stack outside the loop
+  must not do so at the loop's stamp.
+
 ## Running on the robot: in stages, never skipping one
 
 1. `python3 -m pytest tests -q` on the Jetson. `python3 scripts/export/check_onnx.py <pack>` for the detector.
@@ -65,7 +115,8 @@ randomising when you change anything.
 
 | item | where | why it matters |
 |---|---|---|
-| camera mount (position, pitch) | autonomy.yaml | sets every distance the guard and the grasp use |
+| camera mount (position, pitch) | sensor_mounts.yaml (asset values) / autonomy.yaml | sets every distance the guard and the grasp use |
+| body self-view radius (camera and lidar) | sensor_mounts.yaml, autonomy.yaml `runner` | without it the guard stops on the robot's own feet and hands |
 | `pelvis_height_m` | autonomy.yaml | ground-referenced perception vs pelvis-referenced arm |
 | Livox mount and tilt | autonomy.yaml | a level lidar sees nothing nearer than ~1 m |
 | Dex3 palm-to-pinch offset, open/closed presets, tool offset | kinematics.py, dex3.py | where the fingers actually are |

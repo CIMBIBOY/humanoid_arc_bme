@@ -23,6 +23,8 @@ runner:                        # PipelineRunner profile for a robot with no neck
   guard_camera: down
   max_range: 1.0
   require_lidar: false         # true once the Livox is mounted and verified
+  camera_self_radius_m: 0.0    # UNMEASURED. The down camera sees the robot's own feet and hands; points within this radius of the body axis
+                               # (0.05-1.5 m above the floor) are ignored. 0 = off: the guard then stops on the robot's own body (seen in Isaac).
 executor:
   reach_x_m: 0.25              # where the object's centre must stand in the body frame before the arm moves
   reach_y_m: 0.05

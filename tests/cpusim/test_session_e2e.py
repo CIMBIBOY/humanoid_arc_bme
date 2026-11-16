@@ -140,3 +140,18 @@ def test_arm_tasks_are_refused_when_hand_feedback_is_missing():
     s._frame = lambda: __import__("dataclasses").replace(orig(), joints=None)
     st = s.say("pick up the red cup")
     assert st.state == "failed" and "joint feedback" in st.message
+
+
+def test_runner_survives_a_long_disarmed_gap_after_reset_perception():
+    """Without reset_perception a gap longer than max_stamp_jump_s between two stack ticks latches bad_stamp (stays stopped)."""
+    from humanoid_arc_bme.cpusim.session import make_session
+    from humanoid_arc_bme.cpusim.world import Box, Cylinder, World
+
+    ses = make_session(World(boxes=[Box(0.5, 1.5, -0.4, 0.4, 0.74)], cylinders=[Cylinder(0.9, 0.0, 0.04, 0.12, (200, 30, 30), "cup", 0.74)]), arm=False)
+    ses.run(1.0)
+    ses.stack.runner._last_stamp = ses.t - 5.0                    # as if the stack had not ticked for 5 s (disarmed)
+    f = ses._frame()
+    assert "bad_stamp" in ses.stack.step(f, 0.05).reasons
+    ses.stack.reset_perception()
+    ses.t += 0.05
+    assert "bad_stamp" not in ses.stack.step(ses._frame(), 0.05).reasons

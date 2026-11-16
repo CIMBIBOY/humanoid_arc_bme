@@ -132,6 +132,15 @@ class PipelineRunner:
         return SpeedSeparationGuard(lambda d: self._dist if d > 0 else None, a_stop=self.cfg.a_stop,
                                     d_margin=self.cfg.d_margin, require_sensor=True)
 
+    def clearance_ahead(self, now: float, max_age_s: float = 0.5) -> float | None:
+        """Distance (m) to the nearest obstacle ahead as of the last accepted tick, for a consumer outside the runner (the runtime's
+        obstacle stage on manual driving). inf = nothing in range; 0.0 = a fail-closed condition (no ground, no pose, bad frame);
+        None = no reading: the runner has not ticked yet, its stamps are faulted, or the last tick is older than `max_age_s` at `now`."""
+        last = self._last_stamp
+        if last is None or self._stamp_fault or not (0.0 <= now - last <= max_age_s):
+            return None
+        return self._dist
+
     def reset(self) -> None:
         """Supported entry after a relocalisation, localizer/clock restart or a latched `bad_stamp`. Clears the
         obstacle memory, costmap, pose gate, guard distance, sticky hold, pending events and the stamp history, so
@@ -380,6 +389,8 @@ class PipelineRunner:
         aligned = gravity_align(pts, inp.roll, inp.pitch)
         plane = fit_ground(aligned, min_inlier_frac=c.approach_ground_frac) if self._approach else fit_ground(aligned)
         plane = self._plane_with_memory(plane, stamp, pose_est)
+        if c.camera_self_radius_m > 0.0:                    # the robot's own feet, legs and hands in a down-tilted view (see RunnerConfig)
+            aligned = aligned[self_exclusion_keep(aligned, plane, c.camera_self_radius_m)]
         cl = analyze_corridor(aligned, plane, corridor_half_width=c.corridor_half_width, max_range=c.max_range,
                               valid_fraction=valid_fraction, min_valid_fraction=c.min_valid_fraction)
         lres, laligned = self._lidar_stage(inp, stamp, reasons, plane)

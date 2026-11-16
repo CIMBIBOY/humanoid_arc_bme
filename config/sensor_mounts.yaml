@@ -1,0 +1,77 @@
+# The ONE description of where the G1's sensors sit and what they are IN THE SIMULATOR. The simulator builds its sensors from this file and
+# the simulated stack gets its extrinsics from it (isaac/session.py -> onboard/sensors/mounts.py: autonomy_overrides("sim")). The real
+# robot's stack still reads config/autonomy.yaml (placeholders, different values) until the physical mounts are measured; the values here
+# are Unitree's asset values, not a measurement of the robot. Nothing checks the ASSET rows at start-up: scripts/isaac/g1_sensor_gate.py does,
+# offline, so run it after editing one.
+# Frames: position of the sensor frame in the PELVIS frame with the robot standing in its default pose (x forward, y left, z up,
+# metres); pitch_down_deg = how far the frame's x axis points below horizontal. The G1 has no neck: every head sensor is rigid
+# with torso_link and moves with the three waist joints.
+# Tags: ASSET = read from Unitree's own USD (assets/G1_29dof, link frames d435_link / mid360_link / imu_*; the simulator checks them
+# against the asset at start-up). PLACEHOLDER = invented until someone measures it. UNVERIFIED = from memory or a datasheet class,
+# not opened. Whether the physical robot matches Unitree's description is UNMEASURED for every row.
+pelvis_height_m:
+  sim: 0.72            # MEASURED in Isaac under the stand-in locomotion policy (stand phase of scripts/isaac/g1_loco_gate.py: 0.722)
+  robot: 0.78          # UNMEASURED placeholder (config/autonomy.yaml)
+self_view_radius_m:    # the D435 sees the robot's own feet, shins and hands; depth points this close to the body axis are not obstacles
+  sim: 0.40            # GUESS that worked in Isaac (toes reach about 0.2 m ahead standing, further in a step). Measure from recorded frames
+  robot: 0.0           # UNMEASURED: 0 = off (the guard then stops on the robot's own body)
+frames:
+  d435:                # Unitree's stock D435 in the head: it looks at the floor ahead, not forward
+    parent: torso_link
+    asset_frame: d435_link
+    xyz_pelvis: [0.0537, 0.0175, 0.4739]
+    pitch_down_deg: 47.6
+    tag: ASSET
+  mid360:              # Livox Mid-360 in the head (frame also used for its built-in IMU)
+    parent: torso_link
+    asset_frame: mid360_link
+    xyz_pelvis: [-0.0037, 0.0, 0.4602]
+    pitch_down_deg: 2.3
+    tag: ASSET
+  imu_pelvis:          # the IMU rt/lowstate reports
+    parent: pelvis
+    asset_frame: imu_in_pelvis
+    xyz_pelvis: [0.0452, 0.0, -0.0834]
+    pitch_down_deg: 0.0
+    tag: ASSET
+  head_rgbd:           # the additional forward RealSense on the head: NOT mounted in the asset, position and tilt are a guess
+    parent: torso_link
+    asset_frame: null
+    xyz_pelvis: [0.07, 0.0, 0.50]
+    pitch_down_deg: 5.0
+    tag: PLACEHOLDER
+cameras:               # both RealSense units are modelled alike; colour is taken as registered to depth (one image grid)
+  d435:
+    width: 424
+    height: 240
+    hfov_deg: 87.0       # UNVERIFIED (D435 depth FOV about 87 x 58 deg from memory; the datasheet did not fetch)
+    min_range_m: 0.28    # UNVERIFIED
+    max_range_m: 10.0    # UNVERIFIED
+    rate_hz: 10
+  head_rgbd:
+    width: 424
+    height: 240
+    hfov_deg: 87.0       # UNVERIFIED
+    min_range_m: 0.28    # UNVERIFIED
+    max_range_m: 10.0    # UNVERIFIED
+    rate_hz: 10
+depth_noise:           # GUESSES for a D435-class stereo camera, to be replaced by a flat-wall measurement at 0.5 / 1 / 2 / 3 m
+  sigma0: 0.001          # m
+  sigma_k: 0.0072        # 1/m: sigma = sigma0 + sigma_k z^2 (0.08 px disparity noise, 50 mm baseline, fx 223 px at this resolution)
+  p_drop: 0.005
+  p_edge: 0.30
+  edge_thresh: 0.10
+lidar:
+  profile: Livox_Mid360_approx   # isaac/lidar_profiles: 360 x 59 deg (-7..+52), 200k points/s, 10 Hz, 40 lines x 4 interleaved sets (the rosette is NOT modelled)
+  rate_hz: 10
+  subframes: 2                   # renders per frame: the scan is taken in slices (here 2 x 50 ms) so the robot's motion distorts it as it does a
+                                 # real scan. 4 slices cost 46 ms of wall time per 25 ms simulated (real-time factor 0.54, measured); 2 is the trade for sweeps
+  min_range_m: 0.1               # OPENED (livoxtech.com/mid-360)
+  max_range_m: 40.0              # OPENED (at 10 % reflectivity)
+  range_noise_m: 0.02            # GUESS
+imu:
+  rate_hz: 200                   # UNVERIFIED (Mid-360 built-in IMU rate)
+  gyro_noise_rad_s: 0.002        # GUESS (white noise per sample)
+  accel_noise_m_s2: 0.03         # GUESS
+  gyro_bias_rad_s: 0.001         # GUESS (constant per run, drawn per axis)
+  accel_bias_m_s2: 0.02          # GUESS

@@ -90,6 +90,11 @@ class RunnerConfig:
     lidar_min_near_ground_points: int = 10   # floor returns in corridor x in (0.3, 1.2) needed to call the near field observed
     lidar_min_near_coverage: float = 0.8     # and the fraction of 0.1 m x-bins of that range holding a floor return
     lidar_self_radius_m: float = 0.25  # PLACEHOLDER body exclusion cylinder radius for lidar returns (0 disables), heights 0.05..1.5 m
+    camera_self_radius_m: float = 0.0  # body exclusion cylinder for DEPTH-CAMERA points, same shape as the lidar's (0 disables = the behaviour
+    #                                    before 2026-11-14). A down-tilted head camera sees the robot's own feet, legs and hands; without the
+    #                                    mask they are obstacles 0.1-0.3 m ahead and the robot never moves (found in Isaac: the CPU simulator
+    #                                    does not render the robot). UNMEASURED on the robot: set it from recorded frames of the standing and
+    #                                    walking robot; an obstacle nearer than this radius is not seen by the camera.
     lidar_h_min: float = 0.10       # obstacle threshold above the ground for lidar returns (m); 0.10 = lidar noise margin
 
     @property
@@ -114,7 +119,7 @@ def _validate_cfg(c) -> None:
         v = getattr(c, n)
         if not _is_num(v) or v <= 0.0:
             raise ValueError(f"{n}: must be a finite number > 0, got {v!r}")
-    for n in ("d_margin", "memory_lateral_margin", "lidar_self_radius_m"):
+    for n in ("d_margin", "memory_lateral_margin", "lidar_self_radius_m", "camera_self_radius_m"):
         v = getattr(c, n)
         if not _is_num(v) or v < 0.0:
             raise ValueError(f"{n}: must be a finite number >= 0, got {v!r}")

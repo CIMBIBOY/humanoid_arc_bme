@@ -45,7 +45,8 @@ def build_arm() -> ArmPickPlace:
 def build_stack(cfg: dict, semantics=None, arm=None) -> RobotStack:
     r = cfg.get("runner", {})
     runner_cfg = RunnerConfig(guard_camera=r.get("guard_camera", "down"), max_range=float(r.get("max_range", 1.0)),
-                              require_lidar=bool(r.get("require_lidar", False)))
+                              require_lidar=bool(r.get("require_lidar", False)), camera_self_radius_m=float(r.get("camera_self_radius_m", 0.0)),
+                              lidar_self_radius_m=float(r.get("lidar_self_radius_m", RunnerConfig.lidar_self_radius_m)))
     ex = cfg.get("executor", {})
     exec_cfg = ExecutorConfig(pelvis_height_m=float(cfg.get("pelvis_height_m", 0.78)), reach_x_m=float(ex.get("reach_x_m", 0.25)),
                               reach_y_m=float(ex.get("reach_y_m", 0.05)))

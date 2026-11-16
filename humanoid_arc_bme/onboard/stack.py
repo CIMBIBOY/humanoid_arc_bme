@@ -130,6 +130,14 @@ class RobotStack:
     def stop(self, why: str = "stop") -> None:
         self.executor.stop(why)
 
+    def reset_perception(self) -> None:
+        """Start perception from "nothing known": runner (map, memory, pose gate, stamp history), scene and grasp candidates. Called when the
+        robot is armed again: it may have been carried or pushed while disarmed, and a disarmed gap longer than the runner's stamp-jump
+        limit would otherwise latch `bad_stamp` and keep the robot stopped for good."""
+        self.runner.reset()
+        self._scene, self._scene_t, self._last_percept, self._cands = (), -math.inf, -math.inf, ()
+        self._safety, self._reasons = "ok", ()
+
     # ---------------------------------------------------------------- one control tick
     def step(self, f: SensorFrame, dt: float) -> StackOutput:
         """Never raises. On any internal fault the base command is zero and the arm holds its last targets."""
